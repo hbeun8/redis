@@ -43,5 +43,8 @@ def _handle_ping():
     except Exception as e:
         print(e)
 
+def _handle_config(datastore):
+    return f"+Testing Config :{datastore["CONFIG"]}\r\n"
+
 def _handle_unrecognised_command(command):
     return ""
