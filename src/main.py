@@ -18,7 +18,7 @@ class Args:
     a: Optional[str]
 
 @app.command()
-def run(
+def main(
     l: str = typer.Option("tcp", "-l", help="Connection type", case_sensitive=False),
     p: str = typer.Option(..., "-p", help="Port number or range (e.g., 8080 or 8880-8890)"),
     i: Optional[str] = typer.Option(None, "-i", help="Execute program and pipe I/O to/from socket"),
@@ -28,7 +28,7 @@ def run(
     e: Optional[str] = typer.Option(None, "-e", help="Echo Loop to the server"),
     a: Optional[str] = typer.Option(None, "-a", help="Ping Pong Toggle Loop"),
 ):
-    print("Welcome this is a Redis Clone...........................")
+    print("Welcome!Redis Clone")
 
     if "-" in p:
         try:

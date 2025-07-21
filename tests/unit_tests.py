@@ -32,6 +32,10 @@ from protocol_handler import parse_frame, SimpleString, Error, Integer, Bulkstri
     (b"*2\r\n+full\r\n:123\r\n", ([SimpleString("full"), Integer(123)], 13)),
     (b"*2\r\n+full\r\n:123\r\n*0\r\n", ([SimpleString("full"), Integer(123)], 13)), # Parses nested array
 
+    # Cli tests:
+
+
+    (800, (None, 0)),  # Incomplete frame
     #RESP OPRATORS:
     # We want firstly to connect to the server and with the chosen command and ping a message and then close the connection
     #(b"+full\r\n", (Server(args.e).send(b"+full\r\n")).recv(), "full"),  #    # Echo Loop
@@ -41,9 +45,6 @@ from protocol_handler import parse_frame, SimpleString, Error, Integer, Bulkstri
     #Connection Handler
     #We want this to connect to the server using the correct option and perform one of operations and also pipelines.
     # if in the pipeline we want it to go on until there is a keyboard interruption
-
-
-
      ])
 def test_parse_frame(buffer, expected):
     frame, size = parse_frame(buffer)

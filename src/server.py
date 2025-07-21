@@ -26,7 +26,7 @@ class Server:
 
     def _handle_tcp(self, s, port):
         s.listen(1)
-        print(f"Hi Redis! Server listening on port {port}")
+        print(f"Server listening on port")
         conn, addr = s.accept()
         with conn:
             print(f"Connected by {addr[0]} {addr[1]} succeeded")
