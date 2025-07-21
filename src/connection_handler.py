@@ -10,12 +10,12 @@ class ConnectionHandler:
             if not data: break
             frameArr, size = r.parse_frame(data)
             command = frameArr[0]
-            datastore = {}
+            dict = {}
             if len(frameArr) > 1:
-                datastore[frameArr[0].data] = frameArr[1].data
+                dict[frameArr[0].data] = frameArr[1].data
             else:
-                datastore[frameArr[0].data] = ""
-            result = cmd.handle_command(command.data, datastore)
+                dict[frameArr[0].data] = ""
+            result = cmd.handle_command(command.data, dict)
             output = result # Consider appending any error message here
             if output:
                 self.conn.send(output.encode())

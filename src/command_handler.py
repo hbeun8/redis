@@ -22,7 +22,7 @@ def handle_command(command, datastore, persister=None):
         case "RPUSH":
             return _handle_rpush(command, datastore, persister)
         case "SET":
-            return _handle_set(command, datastore, persister)
+            return _handle_set(datastore, persister)
         case "GET":
             return _handle_get(command, datastore)
         case _:
@@ -48,3 +48,15 @@ def _handle_config(datastore):
 
 def _handle_unrecognised_command(command):
     return ""
+
+def _handle_set(datastore):
+    if datastore:
+        return f"+OK\r\n"
+    else:
+        return "Error"
+
+def _handle_get(datastore, key):
+    if datastore:
+        return f"+{datastore[key]}\r\n"
+    else:
+        return "Key not found"

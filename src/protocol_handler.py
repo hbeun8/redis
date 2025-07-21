@@ -109,6 +109,3 @@ def parse_frame(buffer):
         case _:
             # Unknown frame type
             return None, 0
-
-
-    print(Bulkstring("COMMAND"))
