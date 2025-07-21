@@ -1,0 +1,18 @@
+[Redis_clone]
+name = "redis-clone"
+version = "0.1.0"
+description = "Redis_server_app"
+requires-python = ">=3.12"
+dependencies = [
+    "pytest>=8.4.1",
+    "typer[all]"
+]
+
+[project.scripts]
+# This makes `redis-clone` available as a command if the package is installed
+# It maps the CLI entrypoint to `redis_clone/main.py:main()`
+redis-clone = "redis_clone.main:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
