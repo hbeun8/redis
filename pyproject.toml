@@ -10,7 +10,7 @@ dependencies = [
 
 [project.scripts]
 # This makes `redis-clone` available as a command if the package is installed
-# It maps the CLI entrypoint to `redis_clone/main.py:main()`
+# It maps the CLI entrypoint to `redis_clone/test_main.py:main()`
 redis-clone = "redis_clone.main:main"
 
 [tool.pytest.ini_options]

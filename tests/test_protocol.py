@@ -5,7 +5,7 @@
 # 2. streams will be a partial message, a whole message and a whole message followed by 1 or 2
 
 import pytest
-from protocol_handler import parse_frame, SimpleString, Error, Integer, Bulkstring  # Adjust imports as needed
+from protocol_handler import parse_frame, SimpleString, Error, Integer, Bulkstring, Array  # Adjust imports as needed
 
 @pytest.mark.parametrize("buffer, expected", [
     # Simple string tests
@@ -31,21 +31,10 @@ from protocol_handler import parse_frame, SimpleString, Error, Integer, Bulkstri
     (b"*2\r\n+full\r\n", (None, 0)),  # Incomplete frame
     (b"*2\r\n+full\r\n:123\r\n", ([SimpleString("full"), Integer(123)], 13)),
     (b"*2\r\n+full\r\n:123\r\n*0\r\n", ([SimpleString("full"), Integer(123)], 13)), # Parses nested array
-
-    # Cli tests:
-
-
-    (800, (None, 0)),  # Incomplete frame
-    #RESP OPRATORS:
-    # We want firstly to connect to the server and with the chosen command and ping a message and then close the connection
-    #(b"+full\r\n", (Server(args.e).send(b"+full\r\n")).recv(), "full"),  #    # Echo Loop
-  #  (SET (b"+HELLO\r\n",b"+VALUE\r\n") , (Server(args.s).send(set(b"+HELLO"\r\n", b"*2\r\n"VALEU"\r\n").recv(), "\n"),  # SET (Key, Value)
-  #  (GET (b"+HELLO\r\n", b"+VALUE\r\n"), (Server(args.g).send(set(b"+HELLO"\r\n", b" * 2\r\n"VALEU"\r\n").recv(), "full"),  # GET (Key)
-
-    #Connection Handler
-    #We want this to connect to the server using the correct option and perform one of operations and also pipelines.
-    # if in the pipeline we want it to go on until there is a keyboard interruption
+    (b"*1\r\n$4\r\nping\r\n", ([Bulkstring("ping")], 10)),  # Parses Ping
+    (b'*2\r\n$7\r\nCOMMAND\r\n$4\r\nDOCS\r\n', ([Bulkstring(data='COMMAND'), Bulkstring(data='DOCS')], 23))
      ])
+
 def test_parse_frame(buffer, expected):
     frame, size = parse_frame(buffer)
     assert frame == expected[0]

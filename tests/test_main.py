@@ -1,6 +1,6 @@
 import typer
 from typer.testing import CliRunner
-from main import app
+from src.main import app
 runner = CliRunner()
 
 def test_port():
