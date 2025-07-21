@@ -93,21 +93,22 @@ def parse_frame(buffer):
             for _ in range(count):
                 if pos >= len(buffer):
                    return None, 0
-                print("pos", pos)
-                print("Bufffer", buffer[pos:])
+                #print("pos", pos)
+                #print("Bufffer", buffer[pos:])
                 element, size = parse_frame(buffer[pos:])
-                print("element", element)
-                print("size", size)
+                #print("element", element)
+                #print("size", size)
                 if element is None:
                     size = 0
-
                 elements.append(element)
-                print("elements", elements)
+                #print("elements", elements)
                 pos += size
                 agg_size += size
-
             return elements, agg_size
 
         case _:
             # Unknown frame type
             return None, 0
+
+
+    print(Bulkstring("COMMAND"))

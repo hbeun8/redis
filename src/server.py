@@ -21,7 +21,7 @@ class Server:
                         self._handle_tcp(s, PORT)
                     else:
                         self._handle_udp(s, PORT)
-            except OSError:
+            except ConnectionError:
                 print(f"Port {PORT} is closed or in use")
 
     def _handle_tcp(self, s, port):
@@ -31,7 +31,6 @@ class Server:
         with conn:
             print(f"Connected by {addr[0]} {addr[1]} succeeded")
             handler = ConnectionHandler(conn)
-
             if self.args.e:
                 handler.handle_echo_loop(self.args.e)
             elif self.args.x:

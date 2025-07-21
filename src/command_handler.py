@@ -1,5 +1,3 @@
-from csv import excel
-
 
 def handle_command(command, datastore, persister=None):
     match command:
@@ -10,7 +8,7 @@ def handle_command(command, datastore, persister=None):
         case "DEL":
             return _handle_del(command, datastore, persister)
         case "ECHO":
-            return _handle_echo(command)
+            return _handle_echo(datastore)
         case "EXISTS":
             return handle_exists(command, datastore)
         case "INCR":
@@ -33,14 +31,17 @@ def handle_command(command, datastore, persister=None):
 
 def _handle_echo(data):
     try:
-        return data
+        return f"+{data["ECHO"]}\r\n"
     except Exception as e:
-        print(e)
+        print("We have reached Echo Handler and return the error message ", e)
 
 
 def _handle_ping():
     try:
-        return "PONG"
+        result = "PONG"
+        return f"+{result}\r\n"
     except Exception as e:
         print(e)
 
+def _handle_unrecognised_command(command):
+    return ""

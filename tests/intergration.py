@@ -1,6 +1,8 @@
 import pytest
 
 from command_handler as handle_command
+from rich.style import NULL_STYLE
+
 
 @pytest.fixture
 def set_key_value():
@@ -17,4 +19,19 @@ def get_key_value():
         return b"+OK"
 '''**********Edge-Cases**********'''
 
-def
+def test_empty_message():
+    with pytest.raises(ValueError):
+        return NULL
+
+def test_connection_drop_midstream():
+
+
+def test_abrupt_client_shutdown():
+
+
+'''**********Stress Tests**********'''
+
+def test_send10kmessages():
+
+
+def test_handle1_10k_connections():
