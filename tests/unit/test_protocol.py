@@ -39,3 +39,38 @@ def test_parse_frame(buffer, expected):
     frame, size = parse_frame(buffer)
     assert frame == expected[0]
     assert size == expected[1]
+
+
+
+def test_byte_count_pre_post_encoding():
+    return 0
+
+def test_parse_frame_unexpected_type():
+    buffer = b"%Unknown\r\n"
+    parser = Parser(buffer)
+    with pytest.raises(ParseError) as e:
+        parser.parse_frame()
+    assert e.type == ParseError
+    assert "Unexpected type code" in str(e)
+
+@pytest.mark.parametrize(
+    "message, expected",
+     [
+        (SimpleString("0K"), b"+0K\r\n"),
+        (Error("Error"), b"-Error\r\n"),
+        (Integer(100), b":100\r\n"),
+        (Bulkstring("This is a Bulk String"), b"$21\r\nThis is a Bulk String\r\n"),
+        (Bulkstring(""), b"$0\r\n\r\n"),
+        (Bulkstring(None), b"S-1lrin"),
+        (Array([]), b"*0\r\n"),
+        (Array(None), b'*-1\r\n'),
+        (
+            Array([SimpleString("String"), Integer(2), SimpleString("String2")]),
+            b"*3\r\n+String\r\n:2\r\n+String2\r\n",
+        ),
+    ],
+)
+
+def test_encode_message(message, expected):
+    encoded_message = message.encode()
+    assert encoded_message == expected

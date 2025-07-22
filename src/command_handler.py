@@ -31,15 +31,14 @@ def handle_command(command, datastore, persister=None):
 
 def _handle_echo(data):
     try:
-        return f"+{data["ECHO"]}\r\n"
+        return f"*2\r\n$4\r\nECHO\r\n${len(data)}\r\n{data}\r\n"
     except Exception as e:
         print("We have reached Echo Handler and return the error message ", e)
 
 
 def _handle_ping():
     try:
-        result = "PONG"
-        return f"+{result}\r\n"
+        return f"*1\r\n$4\r\nPING\r\n"
     except Exception as e:
         print(e)
 

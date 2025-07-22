@@ -1,6 +1,8 @@
 
 import socket  # For network socket operations
 import datetime  # For timestamp generation
+import threading
+
 from connection_handler import ConnectionHandler
 from dataclasses import dataclass
 
@@ -28,6 +30,9 @@ class Server:
         s.listen(1)
         print(f"Server listening on port")
         conn, addr = s.accept()
+        thread = threading.Thread(target=self._handle_tcp, args=(conn, port))
+        thread.start()
+        thread.join()
         with conn:
             print(f"Connected by {addr[0]} {addr[1]} succeeded")
             handler = ConnectionHandler(conn)
@@ -44,6 +49,8 @@ class Server:
             # default echo loop
             else:
                 handler.handle_echo_loop()
+    def close(self):
+        self.close()
 
     def _handle_udp(self, s, port):
         print(f"Hi! UDP server on port {port}")
