@@ -35,7 +35,7 @@ def execute_ping():
 
 def test_execute_ping(execute_ping):
     result = execute_ping
-    assert result ==  '*1\r\n$4\r\nPONG\r\n'
+    assert result ==  Simplestring("PONG")
 
 
 @pytest.mark.parametrize(

@@ -1,7 +1,9 @@
+from pygments.lexers import data
 
 from datastore import Datastore
 from expiry import Expiry
-from protocol_handler import Bulkstring, Array, Error, Integer, Simplestring
+from protocol_handler import parse_frame, Bulkstring, Array, Error, Integer, Simplestring
+from src.protocol_handler import parse_frame
 
 'create an instance of Datastore and Expiry. They have to be not None'
 cache = Datastore({"key": "value", "Expiry": "value"})
@@ -35,13 +37,16 @@ def handle_command(command, datastore, persister=None):
         case "LRANGE":
             return _handle_range(command, datastore)
         case "PING":
-            return _handle_ping()
+            return _handle_ping(datastore)
         case "RPUSH":
             return _handle_rpush(command, datastore, persister)
         case "SET":
             return _handle_set(datastore, persister)
         case "GET":
             return _handle_get(datastore)
+        # for replication
+        case "SYNC":
+            return _handle_sync(datastore, persistance)
         case _:
             return _handle_unrecognised_command(command)
 
@@ -58,6 +63,7 @@ def _handle_exists(keys):
             found_keys.append(key)
     return Integer(len(found_keys))
 
+
 def _handle_echo(data):
     try:
         if data == {}:
@@ -73,11 +79,21 @@ def _handle_echo(data):
 def resp_encoder_get(data:str):
     return f"*1\r\n${len(data)}\r\n{data}\r\n"
 
-def _handle_ping():
+
+def _handle_ping(datastore):
     try:
-        return f"*1\r\n$4\r\nPONG\r\n"
+        print("Datastore:", datastore)
+        if datastore != []:
+            print("Inside datastore:", datastore)
+            ret = [parse_frame(item.data) for item in datastore]
+            return ret
+        else:
+            return Simplestring("PONG")
+
     except Exception as e:
-        return e
+        print("Error in _handle_ping:", e)
+        return f"-ERROR {str(e)}\r\n"
+
 
 def _handle_config(datastore):
     return f"+Testing Config :{datastore["CONFIG"]}\r\n"
@@ -96,7 +112,16 @@ def _handle_set(datastore, persister):
 def _handle_get(datastore):
     if datastore:
         for key in datastore.keys():
-            result = e.get_value(cache.Get(datastore)) # returns array of datastore
+            result = e.get_value(cache.Get(datastore)) # returns array of datastore and then returns key value.
             return resp_encoder_get(result)
+    else:
+        return "Key not found"
+
+
+def _handle_sync(datastore):
+    if datastore:
+        for key in datastore.keys():
+            result = e.get_ds(cache.Get(datastore)) # returns array of datastore
+            return result
     else:
         return "Key not found"
