@@ -13,7 +13,7 @@ It handles parsing of the following data types:
 from dataclasses import dataclass
 
 @dataclass
-class SimpleString:
+class Simplestring:
     data: str
 
 def Error(data: str):
@@ -53,7 +53,7 @@ def parse_frame(buffer):
             if sep == -1:
                 return None, 0
             value = buffer[1:sep].decode()
-            return SimpleString(value), sep + 2
+            return Simplestring(value), sep + 2
 
         case b'-':
             # Error

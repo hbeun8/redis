@@ -5,13 +5,13 @@
 # 2. streams will be a partial message, a whole message and a whole message followed by 1 or 2
 
 import pytest
-from protocol_handler import parse_frame, SimpleString, Error, Integer, Bulkstring, Array  # Adjust imports as needed
+from protocol_handler import parse_frame, Simplestring, Error, Integer, Bulkstring, Array  # Adjust imports as needed
 
 @pytest.mark.parametrize("buffer, expected", [
     # Simple string tests
     (b"+part", (None, 0)),  # Incomplete frame
-    (b"+full\r\n", (SimpleString("full"), 7)),
-    (b"+full\r\n+part", (SimpleString("full"), 7)),  # Parses only the first frame
+    (b"+full\r\n", (Simplestring("full"), 7)),
+    (b"+full\r\n+part", (Simplestring("full"), 7)),  # Parses only the first frame
 
     # Error tests
     (b"-Err", (None, 0)),  # Incomplete error message
@@ -29,8 +29,8 @@ from protocol_handler import parse_frame, SimpleString, Error, Integer, Bulkstri
 
     # Array tests
     (b"*2\r\n+full\r\n", (None, 0)),  # Incomplete frame
-    (b"*2\r\n+full\r\n:123\r\n", ([SimpleString("full"), Integer(123)], 13)),
-    (b"*2\r\n+full\r\n:123\r\n*0\r\n", ([SimpleString("full"), Integer(123)], 13)), # Parses nested array
+    (b"*2\r\n+full\r\n:123\r\n", ([Simplestring("full"), Integer(123)], 13)),
+    (b"*2\r\n+full\r\n:123\r\n*0\r\n", ([Simplestring("full"), Integer(123)], 13)), # Parses nested array
     (b"*1\r\n$4\r\nping\r\n", ([Bulkstring("ping")], 10)),  # Parses Ping
     (b'*2\r\n$7\r\nCOMMAND\r\n$4\r\nDOCS\r\n', ([Bulkstring(data='COMMAND'), Bulkstring(data='DOCS')], 23))
      ])
@@ -56,7 +56,7 @@ def test_parse_frame_unexpected_type():
 @pytest.mark.parametrize(
     "message, expected",
      [
-        (SimpleString("0K"), b"+0K\r\n"),
+        (Simplestring("0K"), b"+0K\r\n"),
         (Error("Error"), b"-Error\r\n"),
         (Integer(100), b":100\r\n"),
         (Bulkstring("This is a Bulk String"), b"$21\r\nThis is a Bulk String\r\n"),
@@ -65,7 +65,7 @@ def test_parse_frame_unexpected_type():
         (Array([]), b"*0\r\n"),
         (Array(None), b'*-1\r\n'),
         (
-            Array([SimpleString("String"), Integer(2), SimpleString("String2")]),
+            Array([Simplestring("String"), Integer(2), Simplestring("String2")]),
             b"*3\r\n+String\r\n:2\r\n+String2\r\n",
         ),
     ],

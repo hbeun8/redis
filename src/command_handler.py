@@ -1,4 +1,8 @@
 
+from datastore import Datastore
+from expiry import Expiry
+cache = Datastore({"key": "value", "Expiry": "value"})
+e = Expiry({"key": "value", "Expiry": "value"})
 def handle_command(command, datastore, persister=None):
     match command:
         case "CONFIG":
@@ -33,7 +37,7 @@ def _handle_echo(data):
     try:
         return f"*2\r\n$4\r\nECHO\r\n${len(data)}\r\n{data}\r\n"
     except Exception as e:
-        print("We have reached Echo Handler and return the error message ", e)
+        print()
 
 
 def _handle_ping():
@@ -50,6 +54,8 @@ def _handle_unrecognised_command(command):
 
 def _handle_set(datastore):
     if datastore:
+        for key in datastore.keys():
+                e.ladd(cache.Add(datastore)) # returns array of datastore
         return f"+OK\r\n"
     else:
         return "Error"

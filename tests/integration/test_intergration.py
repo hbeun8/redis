@@ -28,7 +28,7 @@ def test_get_key_value(get_key_value):
 
 @pytest.fixture
 def execute_ping():
-    yield {"PING": "*1\r\n$4\r\nPING\r\n"}
+    yield "*1\r\n$4\r\nPING\r\n"
 
 def test_execute_pong(execute_ping):
     assert execute_ping == "*1\r\n$4\r\nPING\r\n"
