@@ -18,14 +18,25 @@ def test_set_key_value(set_key_value):
 
 @pytest.fixture
 def get_key_value():
-    datastore = Datastore({"key": "value"})
+    datastore = Datastore({"key": "value", "Expiry": "July 23, 2026, 2:30 PM", "type": "value"})
+    result = handle_command(Array([Bulkstring("get"), Bulkstring("key")]), datastore)
+    return result, datastore
+
+def test_get_key_value(get_key_value):
+    result, datastore = get_key_value
+    assert result == '*1\r\n$5\r\nvalue\r\n'
+
+
+@pytest.fixture
+def get_key_value_expired():
+    datastore = Datastore({"key": "value", "Expiry": "July 23, 2025, 2:30 PM", "type": "value"})
     result = handle_command(Array([Bulkstring("get"), Bulkstring("key")]), datastore)
     return result, datastore
 
 # This is because we dont have any data at the moment.
-def test_get_key_value(get_key_value):
+def test_get_key_value_expired(get_key_value_expired):
     result, datastore = get_key_value
-    assert result == '*1\r\n$5\r\nvalue\r\n'
+    assert result == '*1\r\n$10\r\Expired\r\n\r\n'
 
 
 @pytest.fixture

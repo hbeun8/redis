@@ -3,13 +3,14 @@ from pygments.lexers import data
 from datastore import Datastore
 from expiry import Expiry
 from protocol_handler import parse_frame, Bulkstring, Array, Error, Integer, Simplestring
-from src.protocol_handler import parse_frame
+
 
 'create an instance of Datastore and Expiry. They have to be not None'
 cache = Datastore({"key": "value", "Expiry": "value"})
 e = Expiry({"key": "value", "Expiry": "value"})
 def handle_command(command, datastore, persister=None):
     datastore = datastore.data
+    #print("Datastore:", datastore)
     if isinstance(command, Array):
         frameArr = command.data
         command = frameArr[0].data.upper()
