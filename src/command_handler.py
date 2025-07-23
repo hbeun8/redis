@@ -26,7 +26,7 @@ def handle_command(command, datastore, persister=None):
         case "ECHO":
             return _handle_echo(datastore)
         case "EXISTS":
-            return handle_exists(command, datastore)
+            return _handle_exists(command, datastore)
         case "INCR":
             return _handle_incr(command, datastore, persister)
         case "LPUSH":
@@ -44,14 +44,19 @@ def handle_command(command, datastore, persister=None):
         case _:
             return _handle_unrecognised_command(command)
 
+def _handle_exists(datastore):
 
 def _handle_echo(data):
     try:
+        if data == {}:
+            return "Err"
         if data is not None:
-            if data.find(" ") == -1:
+            if isinstance(data, set):
                 return f"*2\r\n$4\r\nECHO\r\n${len(data)}\r\n{data}\r\n"
+            else:
+                return "Err"
     except Exception as e:
-        return e
+        return "Err"
 
 def resp_encoder_get(data:str):
     return f"*1\r\n${len(data)}\r\n{data}\r\n"
