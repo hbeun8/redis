@@ -1,21 +1,22 @@
 
 from datastore import Datastore
 from expiry import Expiry
-import protocol_handler as r
+from protocol_handler import Bulkstring, Array, Error, Integer, Simplestring
 
+'create an instance of Datastore and Expiry. They have to be not None'
 cache = Datastore({"key": "value", "Expiry": "value"})
 e = Expiry({"key": "value", "Expiry": "value"})
 def handle_command(command, datastore, persister=None):
     datastore = datastore.data
-    if isinstance(command, r.Array):
+    if isinstance(command, Array):
         frameArr = command.data
         command = frameArr[0].data.upper()
 
         print("COMMAND FRAME:", command)
         print("COMMAND TYPE:", type(command))
         print("COMMAND DATA:", getattr(command, 'data', None))  # Safely prints `.data` if exists
-        print("Datastore keys:", datastore.keys())
-        print("Datastore keys:", datastore.values())
+        #print("Datastore keys:", datastore.keys())
+        #print("Datastore keys:", datastore.values())
     match command:
         case "CONFIG":
             return _handle_config(command)
@@ -26,7 +27,7 @@ def handle_command(command, datastore, persister=None):
         case "ECHO":
             return _handle_echo(datastore)
         case "EXISTS":
-            return _handle_exists(command, datastore)
+            return _handle_exists(datastore)
         case "INCR":
             return _handle_incr(command, datastore, persister)
         case "LPUSH":
@@ -44,7 +45,18 @@ def handle_command(command, datastore, persister=None):
         case _:
             return _handle_unrecognised_command(command)
 
-def _handle_exists(datastore):
+def _handle_exists(keys):
+    keys_data = []
+    for _ in keys:
+        keys_data.append(_.data)
+    print("keys:", keys_data)
+    found_keys = []
+    if keys is None or isinstance(keys, dict) or "Err" in keys or len(keys) == 0:
+        return "Err"
+    for key in keys_data:
+        if key in cache.keys():
+            found_keys.append(key)
+    return Integer(len(found_keys))
 
 def _handle_echo(data):
     try:

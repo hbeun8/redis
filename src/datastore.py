@@ -4,11 +4,14 @@ Datastore
 '''
 
 from threading import Lock
-
+from protocol_handler import Bulkstring, Array, Error, Integer, Simplestring
 
 class Datastore:
     def __init__(self, data):
-        self.data = data
+        if hasattr(data, 'data'):
+            self.data = data.data
+        else:
+            self.data = data
         self._data = [data]
         self._lock = Lock()
         self._value = data["key"] if "key" in data else None

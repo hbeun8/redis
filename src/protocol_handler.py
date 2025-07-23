@@ -36,6 +36,17 @@ class Bulkstring:
 class Array:
     data: list
 
+    def __getitem__(self, key):
+        return self.data[key]
+
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def keys(self):
+        return self.data.keys()
+
+
 def parse_frame(buffer):
     """
     @Purpose: Parses a Redis protocol frame from the buffer.

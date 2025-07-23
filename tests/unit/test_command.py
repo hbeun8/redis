@@ -88,7 +88,6 @@ def test_execute_ping(execute_ping):
         (Array([Bulkstring("del"), Bulkstring("del key2"), Bulkstring("invalid key")]), Integer(1)),
 
         # Incr
-        # Incr
         (Array([Bulkstring("incr")]), Error("ERR wrong number of arguments for 'incr' command")),
         (Array([Bulkstring("incr"), Bulkstring("key")]), Error("ERR value is not an integer or out of range")),
 
@@ -104,6 +103,10 @@ def test_execute_ping(execute_ping):
 )
 
 def test_handle_command(command, expected):
+    try:
+        datastore = Datastore(command[1:])
+    except IndexError:
+        datastore  = Datastore({"key": "value", "Expiry": "value", "type": "value"})
     result = handle_command(command, datastore)
     assert result == expected
 
