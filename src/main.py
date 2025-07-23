@@ -45,6 +45,7 @@ def main(
 
     try:
         server.start(ports)
+        return server
     except KeyboardInterrupt:
         typer.echo("\nServer stopped by user")
 

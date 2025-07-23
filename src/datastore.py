@@ -2,24 +2,27 @@
 '''
 Datastore 
 '''
-from _ast import While
-from asyncio import Queue
+
 from threading import Lock
-from dataclasses import dataclass
+
 
 class Datastore:
-    def __init__(self, data: dict):
+    def __init__(self, data):
+        self.data = data
         self._data = [data]
         self._lock = Lock()
-        self._value = data.get("key")
-        self._expiry = data.get("del key")
+        self._value = data["key"] if "key" in data else None
+        self._expiry = data.get("Expiry") if "Expiry" in data else None
 
     # _data is a dict: key: str, value: str, expiry:int, type: int
-    def Get(self, key):
+    def Get(self, data:dict):
         # Lock not required in read-only mode.
-        return self._data.get('key')
+        for entry in self._data:
+            for key in entry:
+                if key in data:
+                    return entry
 
-    def Add(self, data):
+    def Add(self, data:dict):
         with self._lock:
             for key in data.keys():
                 if key in self._data:
@@ -27,8 +30,19 @@ class Datastore:
                     return data
             self._data.append(data)
             return data
+
     def Len(self):
         return len(self._data)
+
+    def keys(self):
+        return self.data.keys()
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __setitem__(self, key, value):
+        self._data[key] = value
+
     def __str__(self):
         return f"Datastore({self._data})"
 '''

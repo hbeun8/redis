@@ -7,31 +7,35 @@ from datastore import Datastore  # assuming this exists
 
 @pytest.fixture
 def set_key_value():
-    datastore = {"key": "value", "del key": "value", "type": "value"}
-    handle_command(Array([Bulkstring("set"), Bulkstring("key"), Bulkstring("value")]), datastore)
-    return datastore
-
+    datastore = Datastore({"key": "value", "Expiry": "July 23, 2025, 2:30 PM", "type": "value"})
+    result = handle_command(Array([Bulkstring("set"), Bulkstring("key"), Bulkstring("value")]), datastore)
+    return result, datastore
 
 def test_set_key_value(set_key_value):
-    assert set_key_value["key"] == "value"
-
+    result, datastore = set_key_value
+    assert result == "+OK\r\n"
+    assert datastore._value == "value"
 
 @pytest.fixture
-def get_key_value(set_key_value):
-    return handle_command(Array([Bulkstring("get"), Bulkstring("key")]), set_key_value)
+def get_key_value():
+    datastore = Datastore({"key": "value"})
+    result = handle_command(Array([Bulkstring("get"), Bulkstring("key")]), datastore)
+    return result, datastore
 
 # This is because we dont have any data at the moment.
 def test_get_key_value(get_key_value):
-    assert get_key_value == ""
+    result, datastore = get_key_value
+    assert result == '*1\r\n$5\r\nvalue\r\n'
 
 
 @pytest.fixture
 def execute_ping():
-    return handle_command(Array([Bulkstring("PING")]), Datastore())
-
+    datastore = Datastore({})
+    return handle_command(Array([Bulkstring("PING")]), datastore)
 
 def test_execute_ping(execute_ping):
-    assert execute_ping == Simplestring("PONG")
+    result = execute_ping
+    assert result ==  '*1\r\n$4\r\nPONG\r\n'
 
 
 @pytest.mark.parametrize(
@@ -84,6 +88,7 @@ def test_execute_ping(execute_ping):
         (Array([Bulkstring("del"), Bulkstring("del key2"), Bulkstring("invalid key")]), Integer(1)),
 
         # Incr
+        # Incr
         (Array([Bulkstring("incr")]), Error("ERR wrong number of arguments for 'incr' command")),
         (Array([Bulkstring("incr"), Bulkstring("key")]), Error("ERR value is not an integer or out of range")),
 
@@ -95,16 +100,17 @@ def test_execute_ping(execute_ping):
 
         # Rpush
         (Array([Bulkstring("rpush")]), Error("ERR wrong number of arguments for 'rpush' command")),
-    ]
+    ],
 )
+
 def test_handle_command(command, expected):
-    datastore = Datastore({"key": "value", "del key": "value", "del key2": "value"})
     result = handle_command(command, datastore)
     assert result == expected
 
 
+datastore = Datastore({"key": "value", "Expiry": "value", "type": "value"})
+
 def test_handle_incr_command_valid_key():
-    datastore = Datastore()
     result = handle_command(Array([Bulkstring("incr"), Bulkstring("ki")]), datastore)
     assert result == Integer(1)
     result = handle_command(Array([Bulkstring("incr"), Bulkstring("ki")]), datastore)
@@ -112,7 +118,6 @@ def test_handle_incr_command_valid_key():
 
 
 def test_handle_decr():
-    datastore = Datastore()
     result = handle_command(Array([Bulkstring("incr"), Bulkstring("kd")]), datastore)
     assert result == Integer(1)
     result = handle_command(Array([Bulkstring("incr"), Bulkstring("kd")]), datastore)
@@ -124,13 +129,11 @@ def test_handle_decr():
 
 
 def test_handle_decr_invalid_key():
-    datastore = Datastore()
     result = handle_command(Array([Bulkstring("decr"), Bulkstring("missing")]), datastore)
     assert result == Error("ERR value is not an integer or out of range")
 
 
 def test_handle_lpush_lrange():
-    datastore = Datastore()
     result = handle_command(Array([Bulkstring("lpush"), Bulkstring("klp"), Bulkstring("second")]), datastore)
     assert result == Integer(1)
     result = handle_command(Array([Bulkstring("lpush"), Bulkstring("klp"), Bulkstring("first")]), datastore)
@@ -140,7 +143,6 @@ def test_handle_lpush_lrange():
 
 
 def test_set_with_expiry():
-    datastore = Datastore()
     key = "key"
     value = "value"
     ex = 1  # seconds
@@ -150,7 +152,7 @@ def test_set_with_expiry():
     ]
     expected_expiry = time_ns() + ex * 10**9
     result = handle_command(command, datastore)
-    assert result == SimpleString("OK")
+    assert result == Simplestring("OK")
     stored = datastore._data[key]
     assert stored.value == value
     assert abs(expected_expiry - stored.expiry) < 10**7
@@ -163,21 +165,20 @@ def test_set_with_expiry():
     ]
     expected_expiry = time_ns() + px * 10**6
     result = handle_command(command, datastore)
-    assert result == SimpleString("OK")
+    assert result == Simplestring("OK")
     stored = datastore._data[key]
     assert stored.value == value
     assert abs(expected_expiry - stored.expiry) < 10**7
 
 
 def test_get_with_expiry():
-    datastore = Datastore()
     px = 100
     command = [
         Bulkstring("set"), Bulkstring("key"), Bulkstring("value"),
         Bulkstring("px"), Bulkstring(str(px).encode())
     ]
     result = handle_command(command, datastore)
-    assert result == SimpleString("OK")
+    assert result == Simplestring("OK")
     sleep((px + 100) / 1000)
     result = handle_command([Bulkstring("get"), Bulkstring("key")], datastore)
     assert result == Bulkstring(None)

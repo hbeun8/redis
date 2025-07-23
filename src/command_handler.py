@@ -1,9 +1,21 @@
 
 from datastore import Datastore
 from expiry import Expiry
+import protocol_handler as r
+
 cache = Datastore({"key": "value", "Expiry": "value"})
 e = Expiry({"key": "value", "Expiry": "value"})
 def handle_command(command, datastore, persister=None):
+    datastore = datastore.data
+    if isinstance(command, r.Array):
+        frameArr = command.data
+        command = frameArr[0].data.upper()
+
+        print("COMMAND FRAME:", command)
+        print("COMMAND TYPE:", type(command))
+        print("COMMAND DATA:", getattr(command, 'data', None))  # Safely prints `.data` if exists
+        print("Datastore keys:", datastore.keys())
+        print("Datastore keys:", datastore.values())
     match command:
         case "CONFIG":
             return _handle_config(command)
@@ -28,23 +40,27 @@ def handle_command(command, datastore, persister=None):
         case "SET":
             return _handle_set(datastore, persister)
         case "GET":
-            return _handle_get(command, datastore)
+            return _handle_get(datastore)
         case _:
             return _handle_unrecognised_command(command)
 
 
 def _handle_echo(data):
     try:
-        return f"*2\r\n$4\r\nECHO\r\n${len(data)}\r\n{data}\r\n"
+        if data is not None:
+            if data.find(" ") == -1:
+                return f"*2\r\n$4\r\nECHO\r\n${len(data)}\r\n{data}\r\n"
     except Exception as e:
-        print()
+        return e
 
+def resp_encoder_get(data:str):
+    return f"*1\r\n${len(data)}\r\n{data}\r\n"
 
 def _handle_ping():
     try:
-        return f"*1\r\n$4\r\nPING\r\n"
+        return f"*1\r\n$4\r\nPONG\r\n"
     except Exception as e:
-        print(e)
+        return e
 
 def _handle_config(datastore):
     return f"+Testing Config :{datastore["CONFIG"]}\r\n"
@@ -52,16 +68,18 @@ def _handle_config(datastore):
 def _handle_unrecognised_command(command):
     return ""
 
-def _handle_set(datastore):
+def _handle_set(datastore, persister):
     if datastore:
         for key in datastore.keys():
-                e.ladd(cache.Add(datastore)) # returns array of datastore
-        return f"+OK\r\n"
+                if e.ladd(cache.Add(datastore)): # cache.add and e.ladd returns array of datastore
+                    return f"+OK\r\n"
     else:
         return "Error"
 
-def _handle_get(datastore, key):
+def _handle_get(datastore):
     if datastore:
-        return f"+{datastore[key]}\r\n"
+        for key in datastore.keys():
+            result = e.get_value(cache.Get(datastore)) # returns array of datastore
+            return resp_encoder_get(result)
     else:
         return "Key not found"

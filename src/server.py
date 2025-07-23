@@ -27,7 +27,8 @@ class Server:
                 print(f"Port {PORT} is closed or in use")
 
     def _handle_tcp(self, s, port):
-        s.listen(1)
+        self.s = s
+        s.listen(10)
         print(f"Server listening on port")
         conn, addr = s.accept()
         thread = threading.Thread(target=self._handle_tcp, args=(conn, port))
@@ -49,8 +50,8 @@ class Server:
             # default echo loop
             else:
                 handler.handle_echo_loop()
-    def close(self):
-        self.close()
+    def shutdown(self, s):
+        s.close()
 
     def _handle_udp(self, s, port):
         print(f"Hi! UDP server on port {port}")

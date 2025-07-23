@@ -3,10 +3,12 @@ import threading
 
 import pytest
 from main import main
-from server import Server as s
+from server import Server
+
 @pytest.fixture
 def server(scope="module"):
-    threading.Thread(target=main, daemon=True).start()
+    server_thread = (threading.Thread(target=main, daemon=True))
+    server_thread.start()
     time.sleep(0.1)
     yield
-    s.shutdown()
+    #server_thread.shutdown()
