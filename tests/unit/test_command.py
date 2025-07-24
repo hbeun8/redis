@@ -3,13 +3,13 @@ from time import sleep, time_ns
 from protocol_handler import Bulkstring, Array, Error, Integer, Simplestring
 from command_handler import handle_command
 from datastore import Datastore  # assuming this exists
-
+import datetime
 
 @pytest.fixture
 def set_key_value():
-    datastore = Datastore({"key": "value", "Expiry": "July 23, 2025, 2:30 PM", "type": "value"})
-    result = handle_command(Array([Bulkstring("set"), Bulkstring("key"), Bulkstring("value")]), datastore)
-    return result, datastore
+    datastore_1 = Datastore({"key1": "value", "Expiry": "July 23, 2025, 2:30 PM", "type": "value"})
+    result = handle_command(Array([Bulkstring("set"), Bulkstring("key1"), Bulkstring("value")]), datastore_1)
+    return result, datastore_1
 
 def test_set_key_value(set_key_value):
     result, datastore = set_key_value
@@ -18,9 +18,9 @@ def test_set_key_value(set_key_value):
 
 @pytest.fixture
 def get_key_value():
-    datastore = Datastore({"key": "value", "Expiry": "July 23, 2026, 2:30 PM", "type": "value"})
-    result = handle_command(Array([Bulkstring("get"), Bulkstring("key")]), datastore)
-    return result, datastore
+    datastore_2 = Datastore({"key2": "value", "Expiry": "July 25, 2026, 2:30 PM", "type": "value"})
+    result = handle_command(Array([Bulkstring("get"), Bulkstring("key2")]), datastore_2)
+    return result, datastore_2
 
 def test_get_key_value(get_key_value):
     result, datastore = get_key_value
@@ -29,20 +29,20 @@ def test_get_key_value(get_key_value):
 
 @pytest.fixture
 def get_key_value_expired():
-    datastore = Datastore({"key": "value", "Expiry": "July 23, 2025, 2:30 PM", "type": "value"})
-    result = handle_command(Array([Bulkstring("get"), Bulkstring("key")]), datastore)
-    return result, datastore
+    datastore_3 = Datastore({"key3": "value", "Expiry": "July 23, 2025, 2:30 PM", "type": "value"})
+    result = handle_command(Array([Bulkstring("get"), Bulkstring("key3")]), datastore_3)
+    return result, datastore_3
 
 # This is because we dont have any data at the moment.
 def test_get_key_value_expired(get_key_value_expired):
-    result, datastore = get_key_value
-    assert result == '*1\r\n$10\r\Expired\r\n\r\n'
+    result, datastore = get_key_value_expired
+    assert result == '*1\r\n$10\r\nExpired\r\n'
 
 
 @pytest.fixture
 def execute_ping():
-    datastore = Datastore({})
-    return handle_command(Array([Bulkstring("PING")]), datastore)
+    datastore_4 = Datastore({})
+    return handle_command(Array([Bulkstring("PING")]), datastore_4)
 
 def test_execute_ping(execute_ping):
     result = execute_ping
@@ -115,16 +115,17 @@ def test_execute_ping(execute_ping):
 
 def test_handle_command(command, expected):
     try:
-        datastore = Datastore(command[1:])
+        datastore_5 = Datastore(command[1:])
     except IndexError:
-        datastore  = Datastore({"key": "value", "Expiry": "value", "type": "value"})
+        datastore  = Datastore({"Hello": "World", "Expiry": "March 5, 2026, 4:30 PM", "type": "0"})
     result = handle_command(command, datastore)
     assert result == expected
 
 
-datastore = Datastore({"key": "value", "Expiry": "value", "type": "value"})
+
 
 def test_handle_incr_command_valid_key():
+    datastore = Datastore({"ki"})
     result = handle_command(Array([Bulkstring("incr"), Bulkstring("ki")]), datastore)
     assert result == Integer(1)
     result = handle_command(Array([Bulkstring("incr"), Bulkstring("ki")]), datastore)
@@ -132,6 +133,7 @@ def test_handle_incr_command_valid_key():
 
 
 def test_handle_decr():
+    datastore = Datastore({"kd"})
     result = handle_command(Array([Bulkstring("incr"), Bulkstring("kd")]), datastore)
     assert result == Integer(1)
     result = handle_command(Array([Bulkstring("incr"), Bulkstring("kd")]), datastore)
@@ -143,16 +145,21 @@ def test_handle_decr():
 
 
 def test_handle_decr_invalid_key():
+    datastore = Datastore({"missing"})
     result = handle_command(Array([Bulkstring("decr"), Bulkstring("missing")]), datastore)
     assert result == Error("ERR value is not an integer or out of range")
 
 
 def test_handle_lpush_lrange():
+    datastore = Datastore({"klp"})
     result = handle_command(Array([Bulkstring("lpush"), Bulkstring("klp"), Bulkstring("second")]), datastore)
     assert result == Integer(1)
+    datastore = Datastore({"klp"})
     result = handle_command(Array([Bulkstring("lpush"), Bulkstring("klp"), Bulkstring("first")]), datastore)
     assert result == Integer(2)
+    datastore = Datastore({"klp"})
     result = handle_command(Array([Bulkstring("lrange"), Bulkstring("klp"), Bulkstring("0"), Bulkstring("2")]), datastore)
+    datastore = Datastore({"klp"})
     assert result == Array([Bulkstring("first"), Bulkstring("second")])
 
 

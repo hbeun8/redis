@@ -1,33 +1,76 @@
-import protocol_handler as r
-import command_handler as cmd
+
+from protocol_handler import parse_frame, Bulkstring, Array, Error, Integer, Simplestring
+import command_handler
 class ConnectionHandler:
     def __init__(self, conn):
         self.conn = conn
 
     def handle_execute(self):
-        print("INSIDE CONNECTION HANDLER", self)
-        with self.conn:
-            while True:
-                try:
-                    data = self.conn.recv(1024)
-                    print("Received data inside connection handler line 11", data)
-                    if not data: break
-                    frameArr, size = r.parse_frame(data)
-                    command = frameArr[0]
-                    dict = {}
-                    if len(frameArr) > 1:
-                        dict[frameArr[0].data] = frameArr[1].data
-                    else:
-                        dict[frameArr[0].data] = ""
-                    result = cmd.handle_command(command.data, dict)
-                    output = result  # Consider appending any error message here
-                    if output:
-                        self.conn.send(output.encode())
-                    else:
-                        self.conn.send(b'\n')
-                except ConnectionError as e:
-                    print(e)
+        while True:
+            data = self.conn.recv(4096)
+            if not data:  # <-- peer hung up
+                break
+            frames, _ = parse_frame(data)
+            cmd = frames[0].data.upper()
+            print("Command: " + cmd)
+            ds = self.buildDict(frames[1:])
+            # --- minimal compliance for  ---
+            if cmd == 'COMMAND':  # e.g. COMMAND DOCS
+                self.conn.send(b"+OK'\r\n")
+                continue  # stay connected
+            if cmd == 'PING':
+                self.conn.send(b"+PONG\r\n")
+                continue
 
+            if cmd == 'ECHO':
+                if len(frames) == 2:
+                    ds = frames[1].data
+                elif len(frames) > 2:
+                    ds="-Err message\r\n"
+                    self.conn.send(ds.encode())
+                    continue
+                else:
+                    ds = "ECHO"
+                _echo_data = self.resp_serialized(ds)
+                self.conn.send(_echo_data.encode())
+                continue
+
+            ds = {getattr(frames[1], "data")}
+            result = command_handler.handle_command(cmd, ds)
+            print("Received result inside connection handler line 23", result)
+            output = self.resp_serialized(result)  # Consider appending any error message here
+            if output:
+                self.conn.send(output.encode())
+            else:
+                self.conn.send(b'\n')
+
+    def buildDict(self, data:list):
+        if data is None:
+            return {
+                data[1]: data[2] if len(data) > 1 else None,
+                "Expiry": None,
+                "Type": None,
+            }
+    def buildDictforEcho(self, data:list):
+        if len(data) == 0 or data is "":
+            "ECHO"
+        if len(data) == 1:
+            temp = (data[0])
+            ds = getattr(data[0], "data")
+            return ds
+        else:
+            return self.conn.send("-Err".encode())
+
+    def resp_serialized(self, data: str):
+        if data is None or "":
+            return "OK"
+        else:
+            length = 1 # hardwired
+            # build:
+            length_comp = f"*{length}\r\n"
+            data_comp = ''
+            data_comp += f"${len(data)}\r\n{data}\r\n"
+            return length_comp+data_comp
 
     def handle_hex_dump(self):
         data = self.conn.recv(1024)

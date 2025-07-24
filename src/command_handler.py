@@ -78,8 +78,10 @@ def _handle_echo(data):
     except Exception as e:
         return "Err"
 
-def resp_encoder_get(data:str):
-    return f"*1\r\n${len(data)}\r\n{data}\r\n"
+
+
+    def resp_encoder_get(data: str):
+        return f"*1\r\n${len(data)}\r\n{data}\r\n"
 
 
 def _handle_ping(datastore):
