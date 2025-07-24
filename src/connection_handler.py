@@ -6,23 +6,28 @@ class ConnectionHandler:
 
     def handle_execute(self):
         print("INSIDE CONNECTION HANDLER", self)
-        print(f"Connection socket fileno: {self.conn.fileno()}")
-        while True:
-            data = self.conn.recv(1024)
-            if not data: break
-            frameArr, size = r.parse_frame(data)
-            command = frameArr[0]
-            dict = {}
-            if len(frameArr) > 1:
-                dict[frameArr[0].data] = frameArr[1].data
-            else:
-                dict[frameArr[0].data] = ""
-            result = cmd.handle_command(command.data, dict)
-            output = result # Consider appending any error message here
-            if output:
-                self.conn.send(output.encode())
-            else:
-                self.conn.send(b'\n')
+        with self.conn:
+            while True:
+                try:
+                    data = self.conn.recv(1024)
+                    print("Received data inside connection handler line 11", data)
+                    if not data: break
+                    frameArr, size = r.parse_frame(data)
+                    command = frameArr[0]
+                    dict = {}
+                    if len(frameArr) > 1:
+                        dict[frameArr[0].data] = frameArr[1].data
+                    else:
+                        dict[frameArr[0].data] = ""
+                    result = cmd.handle_command(command.data, dict)
+                    output = result  # Consider appending any error message here
+                    if output:
+                        self.conn.send(output.encode())
+                    else:
+                        self.conn.send(b'\n')
+                except ConnectionError as e:
+                    print(e)
+
 
     def handle_hex_dump(self):
         data = self.conn.recv(1024)

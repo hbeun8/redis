@@ -9,12 +9,11 @@ def handle_command(command, datastore, persister=None):
     if hasattr(datastore, 'data') and datastore.data is not None:
         datastore = datastore.data
     else:
-        docs = datastore.get("command")#getattr(datastore, 'command', None)
+        docs = datastore["COMMAND"]
     #print("Datastore:", datastore)
     if isinstance(command, Array):
         frameArr = command.data
         command = frameArr[0].data.upper()
-
         print("COMMAND FRAME:", command)
         print("COMMAND TYPE:", type(command))
         print("COMMAND DATA:", getattr(command, 'data', None))

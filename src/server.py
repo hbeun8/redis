@@ -19,17 +19,15 @@ class Server:
                     print(f"Port {PORT} is open")
                     s.listen(5)
                     print(f"Server listening on port")
-                    conn, addr = s.accept()
-                    print(f"Connection from: {conn}")
-                    print(f"Connected by {addr[0]} {addr[1]} succeeded")
-                    print(f"[BEFORE THREAD] conn.fileno() = {conn.fileno()}")
-                    thread = threading.Thread(target=self._handle_tcp, args=(conn, PORT))
-                    thread.start()
-                    thread.join()
-                    if self.args.l == 'tcp':
-                        self._handle_tcp(conn, PORT)
-                    else:
-                        self._handle_udp(s, PORT)
+                    while True:
+                        conn, addr = s.accept()
+                        print(f"Connection from: {conn}")
+                        print(f"Connected by {addr[0]} {addr[1]} succeeded")
+                        print(f"[BEFORE THREAD] conn.fileno() = {conn.fileno()}")
+                        if self.args.l == 'tcp':
+                            self._handle_tcp(conn, PORT)
+                        else:
+                            self._handle_udp(s, PORT)
             except ConnectionError:
                 print(f"Port {PORT} is closed or in use")
 
