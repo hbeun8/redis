@@ -40,18 +40,22 @@ class Expiry:
                     if key == ds_key:
                         if self._arr[_]["Expiry"] is not None:
                             # if Expired? set type = 1
+
                             if isExpired(self._arr[_]["Expiry"]):
                                 self._arr[_]["type"] = 1
                                 return "+Expired\r\n"
                         return self._arr[_]
 
     def get_value(self, datastore):
+        print(datastore)
         for _ in range(len(self._arr)):
             for key in self._arr[_].keys():
                 for ds_key in datastore.keys():
                     if key == ds_key:
                         # if Expired? set type = 1
                         if self._arr[_]["Expiry"] is not None:
+                            print("datastore:", self._arr[_])
+                            #print("EXPIRY:", self._arr[_]["Expiry"])
                             # if Expired? set type = 1
                             if isExpired(self._arr[_]["Expiry"]):
                                 self._arr[_]["type"] = 1

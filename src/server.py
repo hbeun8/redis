@@ -4,7 +4,6 @@ import datetime  # For timestamp generation
 import threading
 
 from connection_handler import ConnectionHandler
-from dataclasses import dataclass
 
 class Server:
     def __init__(self, args):
@@ -18,25 +17,26 @@ class Server:
                 with socket.socket(socket.AF_INET, self.sock_type) as s:
                     s.bind((self.HOST, PORT))
                     print(f"Port {PORT} is open")
-
+                    s.listen(5)
+                    print(f"Server listening on port")
+                    conn, addr = s.accept()
+                    print(f"Connection from: {conn}")
+                    print(f"Connected by {addr[0]} {addr[1]} succeeded")
+                    print(f"[BEFORE THREAD] conn.fileno() = {conn.fileno()}")
+                    thread = threading.Thread(target=self._handle_tcp, args=(conn, PORT))
+                    thread.start()
+                    thread.join()
                     if self.args.l == 'tcp':
-                        self._handle_tcp(s, PORT)
+                        self._handle_tcp(conn, PORT)
                     else:
                         self._handle_udp(s, PORT)
             except ConnectionError:
                 print(f"Port {PORT} is closed or in use")
 
-    def _handle_tcp(self, s, port):
-        self.s = s
-        s.listen(10)
-        print(f"Server listening on port")
-        conn, addr = s.accept()
-        thread = threading.Thread(target=self._handle_tcp, args=(conn, port))
-        thread.start()
-        thread.join()
+    def _handle_tcp(self, conn, port):
         with conn:
-            print(f"Connected by {addr[0]} {addr[1]} succeeded")
             handler = ConnectionHandler(conn)
+            print("Connection established", conn)
             if self.args.e:
                 handler.handle_echo_loop(self.args.e)
             elif self.args.x:
@@ -44,14 +44,15 @@ class Server:
             elif self.args.a:
                 handler.handle_ping_pong_loop()
             elif self.args.i:
+                print("Now in Interactive mode")
                 handler.handle_execute()
             elif self.args.z:
                 pass  # Just connect and close
             # default echo loop
             else:
                 handler.handle_echo_loop()
-    def shutdown(self, s):
-        s.close()
+    def shutdown(self, conn):
+        self.conn.close()
 
     def _handle_udp(self, s, port):
         print(f"Hi! UDP server on port {port}")

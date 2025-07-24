@@ -5,6 +5,8 @@ class ConnectionHandler:
         self.conn = conn
 
     def handle_execute(self):
+        print("INSIDE CONNECTION HANDLER", self)
+        print(f"Connection socket fileno: {self.conn.fileno()}")
         while True:
             data = self.conn.recv(1024)
             if not data: break

@@ -1,15 +1,15 @@
-from pygments.lexers import data
-
 from datastore import Datastore
 from expiry import Expiry
 from protocol_handler import parse_frame, Bulkstring, Array, Error, Integer, Simplestring
-
 
 'create an instance of Datastore and Expiry. They have to be not None'
 cache = Datastore({"key": "value", "Expiry": "value"})
 e = Expiry({"key": "value", "Expiry": "value"})
 def handle_command(command, datastore, persister=None):
-    datastore = datastore.data
+    if hasattr(datastore, 'data') and datastore.data is not None:
+        datastore = datastore.data
+    else:
+        docs = datastore.get("command")#getattr(datastore, 'command', None)
     #print("Datastore:", datastore)
     if isinstance(command, Array):
         frameArr = command.data
@@ -17,10 +17,12 @@ def handle_command(command, datastore, persister=None):
 
         print("COMMAND FRAME:", command)
         print("COMMAND TYPE:", type(command))
-        print("COMMAND DATA:", getattr(command, 'data', None))  # Safely prints `.data` if exists
+        print("COMMAND DATA:", getattr(command, 'data', None))
         #print("Datastore keys:", datastore.keys())
         #print("Datastore keys:", datastore.values())
     match command:
+        case "COMMAND":
+            return print("Redis-cli is connected", docs)
         case "CONFIG":
             return _handle_config(command)
         case "DECR":
