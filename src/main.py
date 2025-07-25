@@ -20,7 +20,7 @@ class Args:
 @app.command()
 def main(
     l: str = typer.Option("tcp", "-l", help="Connection type", case_sensitive=False),
-    p: str = typer.Option(..., "-p", help="Port number or range (e.g., 8080 or 8880-8890)"),
+    p: str = typer.Option(8001, "-p", help="Port number or range (e.g., 8080 or 8880-8890)"),
     i: Optional[str] = typer.Option(None, "-i", help="Execute program and pipe I/O to/from socket"),
     x: Optional[str] = typer.Option(None, "-x", help="Executes hex dump sent by client"),
     z: Optional[str] = typer.Option(None, "-z", help="Checks if a server is listening on a specified port"),

@@ -25,9 +25,10 @@ class Server:
         for PORT in ports:
             try:
                 with socket.socket(socket.AF_INET, self.sock_type) as s:
+                    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
                     s.bind((self.HOST, PORT))
                     print(f"Port {PORT} is open")
-                    s.listen(5)
+                    s.listen()
                     print("Server listening on port")
                     while True:
                         conn, addr = s.accept()

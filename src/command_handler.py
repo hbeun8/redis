@@ -103,7 +103,7 @@ def _handle_ping(datastore):
 
 
 def _handle_config(datastore):
-    return ""
+    return resp_encoder_get("")
 
 def _handle_unrecognised_command(command):
     return ""

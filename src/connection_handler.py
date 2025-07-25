@@ -13,8 +13,7 @@ class ConnectionHandler:
             frames, _ = parse_frame(data)
             cmd = frames[0].data.upper()
             print("Command: " + cmd)
-            # --- minimal compliance for  ---
-            if cmd == 'COMMAND':  # e.g. COMMAND DOCS
+            if cmd == 'COMMAND':  #
                 self.conn.send(b"+OK'\r\n")
                 continue  # stay connected
             if cmd == 'PING':
@@ -58,6 +57,7 @@ class ConnectionHandler:
             output = self.resp_serialized(result)  # Consider appending any error message here
             print("Serial Result")
             if output:
+                print(output.encode())
                 self.conn.send(output.encode())
             else:
                 self.conn.send(b'\n')
@@ -75,10 +75,10 @@ class ConnectionHandler:
         else:
             length = 1 # hardwired
             # build:
-            length_comp = f"*{length}\r\n"
-            data_comp = ''
-            data_comp += f"${len(data)}\r\n{data}\r\n"
-            return length_comp+data_comp
+            #_comp = f"*{length}\r\n"
+            #data_comp = ''
+            _comp = f"${len(data)}\r\n{data}\r\n"
+            return _comp
 
     def handle_hex_dump(self):
         data = self.conn.recv(1024)
