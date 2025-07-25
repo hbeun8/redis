@@ -7,8 +7,8 @@ from connection_handler import ConnectionHandler
 
 def _client_thread(conn, addr, PORT, server):
     with conn:
-        print(f"Connection from: {conn}")
-        print(f"Connected by {addr[0]} {addr[1]} succeeded")
+        #print(f"Connection from: {conn}")
+        #print(f"Connected by {addr[0]} {addr[1]} succeeded")
         print(f"[THREAD] conn.fileno() = {conn.fileno()}")
         if server.args.l == 'tcp':
             server._handle_tcp(conn, PORT)
@@ -40,7 +40,7 @@ class Server:
     def _handle_tcp(self, conn, port):
         with conn:
             handler = ConnectionHandler(conn)
-            print("Connection established", conn)
+            #print("Connection established", conn)
             if self.args.e:
                 handler.handle_echo_loop(self.args.e)
             elif self.args.x:
@@ -48,7 +48,7 @@ class Server:
             elif self.args.a:
                 handler.handle_ping_pong_loop()
             elif self.args.i:
-                print("Now in Interactive mode")
+                #print("Now in Interactive mode")
                 handler.handle_execute()
             elif self.args.z:
                 pass  # Just connect and close

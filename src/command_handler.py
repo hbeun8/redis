@@ -9,10 +9,11 @@ cache = Datastore({"key": "value", "Expiry": "value"})
 e = Expiry({"key": "value", "Expiry": "value"})
 
 def handle_command(command, datastore, persister=None):
-    print("Datastore:", datastore)
-    print("COMMAND FRAME:", command)
-    print("COMMAND TYPE:", type(command))
-    print("COMMAND DATA:", datastore)
+
+    #print("Datastore:", datastore)
+    #print("COMMAND FRAME:", command)
+    #print("COMMAND TYPE:", type(command))
+    #print("COMMAND DATA:", datastore)
     cache.log(command)
     #print("Datastore keys:", datastore.keys())
     #print("Datastore keys:", datastore.values())
@@ -59,7 +60,7 @@ def _handle_exists(keys):
     keys_data = []
     for _ in keys:
         keys_data.append(_.data)
-    print("keys:", keys_data)
+    #print("keys:", keys_data)
     found_keys = []
     if keys is None or isinstance(keys, dict) or "Err" in keys or len(keys) == 0:
         return "Err"
@@ -90,9 +91,7 @@ def resp_encoder_get(data: str):
 
 def _handle_ping(datastore):
     try:
-        print("Datastore:", datastore)
         if datastore != []:
-            print("Inside datastore:", datastore)
             ret = [parse_frame(item.data) for item in datastore]
             return ret
         else:
