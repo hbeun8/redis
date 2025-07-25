@@ -34,19 +34,26 @@ class ConnectionHandler:
                 _echo_data = self.resp_serialized(ds)
                 self.conn.send(_echo_data.encode())
                 continue
-
+            # default option
+            option = "vanilla"
             datastore =  ds # proxy for now
             if cmd == 'GET':
-                datastore = {getattr(frames[1], "data"): "TO BE FOUND", "Expiry": "TO BE FOUND"}
+                kwarg_key = {getattr(frames[1], "data")}
+                if option == "vanilla":
+                    datastore = {kwarg_key: "TO BE FOUND", "Expiry": "TO BE FOUND"}
             else:
                 if len(frames) == 2:
                     if cmd == "SET":
                         self.conn.send(self.resp_serialized("Err").encode())
                         continue
                     datastore = {getattr(frames[1], "data"): "NONE", "Expiry": "NONE"}
-                elif len(frames) == 3:
-                    datastore = {getattr(frames[1], "data"): getattr(frames[2], "data"), "Expiry": "NONE"}
-
+                elif len(frames) > 2 :
+                    kwarg_key = self.isvalid(frames, 1, "None"),
+                    kwarg_value = self.isvalid(frames, 2, "None"),
+                    kwarg_ex_px = self.isvalid(frames, 3, "Expiry"),
+                    kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
+                    datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
+                    print(datastore)
             result = command_handler.handle_command(cmd, datastore)
             print("Result: " + str(result))
             output = self.resp_serialized(result)  # Consider appending any error message here
@@ -55,6 +62,12 @@ class ConnectionHandler:
                 self.conn.send(output.encode())
             else:
                 self.conn.send(b'\n')
+
+    def isvalid(self, data:list, index: int, safe: str):
+        try:
+            return getattr(data[index], "data")
+        except IndexError:
+            return safe
 
     def buildDict(self, data:list):
         if data is None:
@@ -74,7 +87,7 @@ class ConnectionHandler:
             return self.conn.send("-Err".encode())
 
     def resp_serialized(self, data: str):
-        if data is None or isinstance(data, str):
+        if data is None or "":
             return "OK"
         else:
             length = 1 # hardwired
