@@ -5,6 +5,16 @@ import threading
 
 from connection_handler import ConnectionHandler
 
+def _client_thread(conn, addr, PORT, server):
+    with conn:
+        print(f"Connection from: {conn}")
+        print(f"Connected by {addr[0]} {addr[1]} succeeded")
+        print(f"[THREAD] conn.fileno() = {conn.fileno()}")
+        if server.args.l == 'tcp':
+            server._handle_tcp(conn, PORT)
+        else:
+            server._handle_udp(conn, PORT)
+
 class Server:
     def __init__(self, args):
         self.args = args
@@ -18,16 +28,12 @@ class Server:
                     s.bind((self.HOST, PORT))
                     print(f"Port {PORT} is open")
                     s.listen(5)
-                    print(f"Server listening on port")
+                    print("Server listening on port")
                     while True:
                         conn, addr = s.accept()
-                        print(f"Connection from: {conn}")
-                        print(f"Connected by {addr[0]} {addr[1]} succeeded")
-                        print(f"[BEFORE THREAD] conn.fileno() = {conn.fileno()}")
-                        if self.args.l == 'tcp':
-                            self._handle_tcp(conn, PORT)
-                        else:
-                            self._handle_udp(s, PORT)
+                        print(f"[MAIN] conn.fileno() = {conn.fileno()}")
+                        t = threading.Thread(target=_client_thread, args=(conn, addr, PORT, self), daemon=True)
+                        t.start()
             except ConnectionError:
                 print(f"Port {PORT} is closed or in use")
 

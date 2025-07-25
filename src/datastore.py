@@ -33,7 +33,7 @@ class Datastore:
         return "(nil)"
 
     def Add(self, data:dict):
-         try:   # with self._lock:
+        with self._lock:   #
             keys = list(data.keys())
             key = keys[0]
             for datastore in self._data:
@@ -42,8 +42,7 @@ class Datastore:
                     return "(already exists)"
             self._data.append(data)
             return data
-         except Exception as e:
-             print(e)
+
 
     def incr(self, data:dict):
         try: #with self._lock:

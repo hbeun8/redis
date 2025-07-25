@@ -104,7 +104,7 @@ def _handle_ping(datastore):
 
 
 def _handle_config(datastore):
-    return f"+Testing Config :{datastore["CONFIG"]}\r\n"
+    return ""
 
 def _handle_unrecognised_command(command):
     return ""
@@ -113,16 +113,15 @@ def _handle_set(datastore, persister):
     if datastore:
         for key in datastore.keys():
                 if e.ladd(cache.Add(datastore)): # cache.add and e.ladd returns array of datastore
-                    return '+OK\r\n'
+                    return 'OK'
     else:
         return "-Error"
 
 def _handle_get(datastore):
-    print("The whole cache")
-    print(cache)
     if datastore:
             result = e.get_value(cache.Get(datastore)) # returns array of datastore and then returns key value.
-            return resp_encoder_get(result)
+            #print(result)
+            return result #resp_encoder_get(result)
     else:
         return "-ERROR"
 
