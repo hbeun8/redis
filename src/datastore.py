@@ -7,42 +7,70 @@ from threading import Lock
 from protocol_handler import Bulkstring, Array, Error, Integer, Simplestring
 
 class Datastore:
-    def __init__(self, data):
+    def __init__(self, data:dict):
         if hasattr(data, 'data'):
             self.data = data.data
         else:
             self.data = data
-        self._data = [data]
+        self._data = []
         self._lock = Lock()
+        self.keys = list(data.keys())
+        self.key = self.keys[0]
 
     # _data is a dict: key: str, value: str, expiry:int, type: int
-    def Get(self, data:dict):
+    def log(self, data):
+        print("(logged)")
+
+    def Get(self, data):
         # Lock not required in read-only mode.
-        '''
-        keys = data.keys()
+        keys = list(data.keys())
         key = keys[0]
-        self._data
-        '''
-        print("Data ", data)
-        print("_Data ", self._data)
-        for entry in self._data:
-            for key in entry:
-                if key in data:
-                    return data[key]
+        for datastore in self._data:
+            if key in datastore.keys():
+                return datastore[key]
+            else:
                 print(f"Key {key} not found")
-        return None
+        return "(nil)"
 
     def Add(self, data:dict):
-        with self._lock:
-            d_keys = list(self.data.keys())
-            key = d_keys[0]
-            print('Add Item', key)
+         try:   # with self._lock:
+            keys = list(data.keys())
+            key = keys[0]
             for datastore in self._data:
                 if key in datastore.keys():
                     print(f"Key {key} already exists")
-                    return data
+                    return "(already exists)"
             self._data.append(data)
             return data
+         except Exception as e:
+             print(e)
+
+    def incr(self, data:dict):
+        try: #with self._lock:
+            v = 0
+            def _incr(ds):
+                key = list(ds.keys())[0]
+                v =  str(int(key) + 1)
+                return v
+            map(_incr,self._data)
+            return v
+        except Exception as e:
+            print(e)
+            return e
+
+    def decr(self, data):
+        try: #with self._lock:
+            v = 0
+            def _decr(ds):
+                key = list(ds.keys())[0]
+                v = str(int(key) - 1)
+                return v
+            map(_decr,self._data)
+            return v
+
+        except Exception as e:
+            print(e)
+            return e
 
     def Len(self):
         return len(self._data)

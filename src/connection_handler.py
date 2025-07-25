@@ -35,8 +35,9 @@ class ConnectionHandler:
                 self.conn.send(_echo_data.encode())
                 continue
 
+            datastore =  ds # proxy for now
             if cmd == 'GET':
-                datastore = {getattr(frames[1], "data"): "NONE", "Expiry": "NONE"}
+                datastore = {getattr(frames[1], "data"): "TO BE FOUND", "Expiry": "TO BE FOUND"}
             else:
                 if len(frames) == 2:
                     if cmd == "SET":
@@ -47,7 +48,7 @@ class ConnectionHandler:
                     datastore = {getattr(frames[1], "data"): getattr(frames[2], "data"), "Expiry": "NONE"}
 
             result = command_handler.handle_command(cmd, datastore)
-            print("Result: " + result)
+            print("Result: " + str(result))
             output = self.resp_serialized(result)  # Consider appending any error message here
             print("Serial Result")
             if output:
@@ -73,7 +74,7 @@ class ConnectionHandler:
             return self.conn.send("-Err".encode())
 
     def resp_serialized(self, data: str):
-        if data is None or "":
+        if data is None or isinstance(data, str):
             return "OK"
         else:
             length = 1 # hardwired

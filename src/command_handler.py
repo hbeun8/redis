@@ -1,3 +1,5 @@
+from typing_extensions import dataclass_transform
+
 from datastore import Datastore
 from expiry import Expiry
 from protocol_handler import parse_frame, Bulkstring, Array, Error, Integer, Simplestring
@@ -5,21 +7,22 @@ from protocol_handler import parse_frame, Bulkstring, Array, Error, Integer, Sim
 'create an instance of Datastore and Expiry. They have to be not None'
 cache = Datastore({"key": "value", "Expiry": "value"})
 e = Expiry({"key": "value", "Expiry": "value"})
+
 def handle_command(command, datastore, persister=None):
     print("Datastore:", datastore)
     print("COMMAND FRAME:", command)
     print("COMMAND TYPE:", type(command))
-    print("COMMAND DATA:", getattr(command, 'data', None))
-    cache.Add(datastore)
+    print("COMMAND DATA:", datastore)
+    cache.log(command)
     #print("Datastore keys:", datastore.keys())
     #print("Datastore keys:", datastore.values())
     match command:
         case "COMMAND":
-            return print("Redis-cli is connected", docs)
+            return print("Redis-cli is connected")
         case "CONFIG":
             return _handle_config(command)
         case "DECR":
-            return _handle_decr(command, datastore, persister)
+            return _handle_decr(datastore, persister)
         case "DEL":
             return _handle_del(command, datastore, persister)
         case "ECHO":
@@ -27,7 +30,7 @@ def handle_command(command, datastore, persister=None):
         case "EXISTS":
             return _handle_exists(datastore)
         case "INCR":
-            return _handle_incr(command, datastore, persister)
+            return _handle_incr(datastore, persister)
         case "LPUSH":
             return _handle_lpush(command, datastore, persister)
         case "LRANGE":
@@ -45,6 +48,12 @@ def handle_command(command, datastore, persister=None):
             return _handle_sync(datastore, persistance)
         case _:
             return _handle_unrecognised_command(command)
+
+def _handle_incr(data, persister):
+    return cache.incr(data)
+
+def _handle_decr(data, persister):
+    return cache.decr(data)
 
 def _handle_exists(keys):
     keys_data = []
@@ -78,6 +87,7 @@ def resp_encoder_get(data: str):
     return f"*1\r\n${len(data)}\r\n{data}\r\n"
 
 
+
 def _handle_ping(datastore):
     try:
         print("Datastore:", datastore)
@@ -105,15 +115,16 @@ def _handle_set(datastore, persister):
                 if e.ladd(cache.Add(datastore)): # cache.add and e.ladd returns array of datastore
                     return '+OK\r\n'
     else:
-        return "Error"
+        return "-Error"
 
 def _handle_get(datastore):
+    print("The whole cache")
+    print(cache)
     if datastore:
-        for key in datastore.keys():
             result = e.get_value(cache.Get(datastore)) # returns array of datastore and then returns key value.
             return resp_encoder_get(result)
     else:
-        return "Key not found"
+        return "-ERROR"
 
 
 def _handle_sync(datastore):
