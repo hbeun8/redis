@@ -35,10 +35,11 @@ class ConnectionHandler:
                 self.conn.send(_echo_data.encode())
                 continue
 
-            ds = {getattr(frames[1], "data")}
-            result = command_handler.handle_command(cmd, ds)
-            print("Received result inside connection handler line 23", result)
+            datastore = {getattr(frames[1], "data"): getattr(frames[2], "data"), "Expiry": "NONE"}
+            result = command_handler.handle_command(cmd, datastore)
+            print("Result: " + result)
             output = self.resp_serialized(result)  # Consider appending any error message here
+            print("Serial Result")
             if output:
                 self.conn.send(output.encode())
             else:

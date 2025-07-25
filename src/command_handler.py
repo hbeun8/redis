@@ -6,19 +6,13 @@ from protocol_handler import parse_frame, Bulkstring, Array, Error, Integer, Sim
 cache = Datastore({"key": "value", "Expiry": "value"})
 e = Expiry({"key": "value", "Expiry": "value"})
 def handle_command(command, datastore, persister=None):
-    if hasattr(datastore, 'data') and datastore.data is not None:
-        datastore = datastore.data
-    else:
-        docs = datastore["COMMAND"]
-    #print("Datastore:", datastore)
-    if isinstance(command, Array):
-        frameArr = command.data
-        command = frameArr[0].data.upper()
-        print("COMMAND FRAME:", command)
-        print("COMMAND TYPE:", type(command))
-        print("COMMAND DATA:", getattr(command, 'data', None))
-        #print("Datastore keys:", datastore.keys())
-        #print("Datastore keys:", datastore.values())
+    print("Datastore:", datastore)
+    print("COMMAND FRAME:", command)
+    print("COMMAND TYPE:", type(command))
+    print("COMMAND DATA:", getattr(command, 'data', None))
+    cache.Add(datastore)
+    #print("Datastore keys:", datastore.keys())
+    #print("Datastore keys:", datastore.values())
     match command:
         case "COMMAND":
             return print("Redis-cli is connected", docs)
@@ -69,19 +63,19 @@ def _handle_exists(keys):
 def _handle_echo(data):
     try:
         if data == {}:
-            return "Err"
+            return "-Err"
         if data is not None:
             if isinstance(data, set):
                 return f"*2\r\n$4\r\nECHO\r\n${len(data)}\r\n{data}\r\n"
             else:
-                return "Err"
+                return "-Err"
     except Exception as e:
-        return "Err"
+        return "-Err"
 
 
 
-    def resp_encoder_get(data: str):
-        return f"*1\r\n${len(data)}\r\n{data}\r\n"
+def resp_encoder_get(data: str):
+    return f"*1\r\n${len(data)}\r\n{data}\r\n"
 
 
 def _handle_ping(datastore):
@@ -109,7 +103,7 @@ def _handle_set(datastore, persister):
     if datastore:
         for key in datastore.keys():
                 if e.ladd(cache.Add(datastore)): # cache.add and e.ladd returns array of datastore
-                    return f"+OK\r\n"
+                    return '+OK\r\n'
     else:
         return "Error"
 
