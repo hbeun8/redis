@@ -14,21 +14,31 @@ class Datastore:
             self.data = data
         self._data = [data]
         self._lock = Lock()
-        self._value = data["key"] if "key" in data else None
-        self._expiry = data.get("Expiry") if "Expiry" in data else None
 
     # _data is a dict: key: str, value: str, expiry:int, type: int
     def Get(self, data:dict):
         # Lock not required in read-only mode.
+        '''
+        keys = data.keys()
+        key = keys[0]
+        self._data
+        '''
+        print("Data ", data)
+        print("_Data ", self._data)
         for entry in self._data:
             for key in entry:
                 if key in data:
-                    return entry
+                    return data[key]
+                print(f"Key {key} not found")
+        return None
 
     def Add(self, data:dict):
         with self._lock:
-            for key in data.keys():
-                if key in self._data:
+            d_keys = list(self.data.keys())
+            key = d_keys[0]
+            print('Add Item', key)
+            for datastore in self._data:
+                if key in datastore.keys():
                     print(f"Key {key} already exists")
                     return data
             self._data.append(data)

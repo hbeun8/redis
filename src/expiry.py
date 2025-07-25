@@ -15,6 +15,8 @@ class Expiry:
     def ladd(self, data):
         temp_arr = []
         data["type"] = 0 if "type" in data.keys() else None  # This ensures the data is retrievable because not expired.
+        if not isinstance(data["Expiry"], datetime):
+            return data
         if data["Expiry"]  is not None:
             temp_arr.insert(0, data)
             for _ in range(len(self._arr)):
@@ -40,7 +42,6 @@ class Expiry:
                     if key == ds_key:
                         if self._arr[_]["Expiry"] is not None:
                             # if Expired? set type = 1
-
                             if isExpired(self._arr[_]["Expiry"]):
                                 self._arr[_]["type"] = 1
                                 return "+Expired\r\n"
@@ -53,6 +54,8 @@ class Expiry:
                 for ds_key in datastore.keys():
                     if key == ds_key:
                         # if Expired? set type = 1
+                        if not isinstance(self._arr[_]["Expiry"], datetime):
+                            return self._arr[_][key]
                         if self._arr[_]["Expiry"] is not None:
                             print("datastore:", self._arr[_])
                             #print("EXPIRY:", self._arr[_]["Expiry"])

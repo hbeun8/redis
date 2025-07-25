@@ -35,7 +35,17 @@ class ConnectionHandler:
                 self.conn.send(_echo_data.encode())
                 continue
 
-            datastore = {getattr(frames[1], "data"): getattr(frames[2], "data"), "Expiry": "NONE"}
+            if cmd == 'GET':
+                datastore = {getattr(frames[1], "data"): "NONE", "Expiry": "NONE"}
+            else:
+                if len(frames) == 2:
+                    if cmd == "SET":
+                        self.conn.send(self.resp_serialized("Err").encode())
+                        continue
+                    datastore = {getattr(frames[1], "data"): "NONE", "Expiry": "NONE"}
+                elif len(frames) == 3:
+                    datastore = {getattr(frames[1], "data"): getattr(frames[2], "data"), "Expiry": "NONE"}
+
             result = command_handler.handle_command(cmd, datastore)
             print("Result: " + result)
             output = self.resp_serialized(result)  # Consider appending any error message here
