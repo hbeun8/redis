@@ -13,7 +13,6 @@ class ConnectionHandler:
             frames, _ = parse_frame(data)
             cmd = frames[0].data.upper()
             print("Command: " + cmd)
-            ds = self.buildDict(frames[1:])
             # --- minimal compliance for  ---
             if cmd == 'COMMAND':  # e.g. COMMAND DOCS
                 self.conn.send(b"+OK'\r\n")
@@ -36,11 +35,11 @@ class ConnectionHandler:
                 continue
             # default option
             option = "vanilla"
-            datastore =  ds # proxy for now
+            datastore =  {} # proxy for now
             if cmd == 'GET':
-                kwarg_key = {getattr(frames[1], "data")}
+                kwarg_key = self.isvalid(frames, 1, "None"),
                 if option == "vanilla":
-                    datastore = {kwarg_key: "TO BE FOUND", "Expiry": "TO BE FOUND"}
+                    datastore = {kwarg_key[0]: "TO BE FOUND", "Expiry": "TO BE FOUND"}
             else:
                 if len(frames) == 2:
                     if cmd == "SET":
@@ -69,22 +68,6 @@ class ConnectionHandler:
         except IndexError:
             return safe
 
-    def buildDict(self, data:list):
-        if data is None:
-            return {
-                data[1]: data[2] if len(data) > 1 else None,
-                "Expiry": None,
-                "Type": None,
-            }
-    def buildDictforEcho(self, data:list):
-        if len(data) == 0 or data is "":
-            "ECHO"
-        if len(data) == 1:
-            temp = (data[0])
-            ds = getattr(data[0], "data")
-            return ds
-        else:
-            return self.conn.send("-Err".encode())
 
     def resp_serialized(self, data: str):
         if data is None or "":
