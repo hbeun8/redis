@@ -28,7 +28,7 @@ class ConnectionHandler:
                     self.conn.send(ds.encode())
                     continue
                 else:
-                    ds = "ECHO"
+                    ds="-Err message\r\n"
                 _echo_data = self.resp_serialized(ds)
                 self.conn.send(_echo_data.encode())
                 continue
@@ -55,7 +55,6 @@ class ConnectionHandler:
             result = command_handler.handle_command(cmd, datastore)
             print("Result: " + str(result))
             output = self.resp_serialized(result)  # Consider appending any error message here
-            print("Serial Result")
             if output:
                 print(output.encode())
                 self.conn.send(output.encode())

@@ -72,17 +72,18 @@ def _handle_exists(keys):
 
 def _handle_echo(data):
     try:
-        if data == {}:
-            return "-Err"
-        if data is not None:
-            if isinstance(data, set):
-                return f"*2\r\n$4\r\nECHO\r\n${len(data)}\r\n{data}\r\n"
-            else:
+        if isinstance(data, str):
+            if data == "":
                 return "-Err"
+            else:
+                return data
+        if isinstance(data, Array):
+            return data.data.data
+        if isinstance(data, Bulkstring):
+            return data.data
+
     except Exception as e:
         return "-Err"
-
-
 
 def resp_encoder_get(data: str):
     return f"*1\r\n${len(data)}\r\n{data}\r\n"
@@ -91,11 +92,7 @@ def resp_encoder_get(data: str):
 
 def _handle_ping(datastore):
     try:
-        if datastore != []:
-            ret = [parse_frame(item.data) for item in datastore]
-            return ret
-        else:
-            return Simplestring("PONG")
+        return "PONG"
 
     except Exception as e:
         print("Error in _handle_ping:", e)

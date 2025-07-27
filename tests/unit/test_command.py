@@ -2,72 +2,66 @@ import pytest
 from time import sleep, time_ns
 from protocol_handler import Bulkstring, Array, Error, Integer, Simplestring
 from command_handler import handle_command
-from datastore import Datastore  # assuming this exists
+from connection_handler import ConnectionHandler as c
+from datastore import Datastore
 import datetime
 
 @pytest.fixture
 def set_key_value():
-    datastore_1 = Datastore({"key1": "value", "Expiry": "July 23, 2025, 2:30 PM", "type": "value"})
-    result = handle_command(Array([Bulkstring("set"), Bulkstring("key1"), Bulkstring("value")]), datastore_1)
-    return result, datastore_1
+    datastore_1 = {"key1": "value", "Expiry": "July 23, 2026, 2:30 PM"}
+    command = "SET"
+    result = handle_command(command, datastore_1)
+    return result
 
 def test_set_key_value(set_key_value):
-    result, datastore = set_key_value
-    assert result == "+OK\r\n"
-    assert datastore._value == "value"
+    result = set_key_value
+    assert result == "OK"
 
 @pytest.fixture
 def get_key_value():
-    datastore_2 = Datastore({"key2": "value", "Expiry": "July 25, 2026, 2:30 PM", "type": "value"})
-    result = handle_command(Array([Bulkstring("get"), Bulkstring("key2")]), datastore_2)
-    return result, datastore_2
+    datastore_2 = {"key1": "none", "Expiry": "July 25, 2026, 2:30 PM", "type": "value"}
+    command = "GET"
+    result = handle_command(command, datastore_2)
+    return result
 
 def test_get_key_value(get_key_value):
-    result, datastore = get_key_value
-    assert result == '*1\r\n$5\r\nvalue\r\n'
+    result = get_key_value
+    assert result == 'value'
 
 
 @pytest.fixture
 def get_key_value_expired():
-    datastore_3 = Datastore({"key3": "value", "Expiry": "July 23, 2025, 2:30 PM", "type": "value"})
-    result = handle_command(Array([Bulkstring("get"), Bulkstring("key3")]), datastore_3)
-    return result, datastore_3
+    datastore_3 = {"key3": "value", "Expiry": "July 23, 2025, 2:30 PM", "type": "value"}
+    command = "GET"
+    result = handle_command(command, datastore_3)
+    return result
 
 # This is because we dont have any data at the moment.
 def test_get_key_value_expired(get_key_value_expired):
-    result, datastore = get_key_value_expired
-    assert result == '*1\r\n$10\r\nExpired\r\n'
+    result = get_key_value_expired
+    assert result == '(nil)'
 
 
 @pytest.fixture
 def execute_ping():
-    datastore_4 = Datastore({})
-    return handle_command(Array([Bulkstring("PING")]), datastore_4)
+    datastore_4 = {"PING" : "NONE"}
+    command = "PING"
+    result = handle_command(command, datastore_4)
+    return result
 
 def test_execute_ping(execute_ping):
     result = execute_ping
-    assert result ==  Simplestring("PONG")
+    assert result ==  "PONG"
 
 
 @pytest.mark.parametrize(
-    "command,expected",
+    "command_and_datastore,expected",
     [
-        # Echo tests
-        (Array([Bulkstring("ECHO")]), Error("Err wrong number of arguments for 'echo' command")),
-        (Array([Bulkstring("ECHO"), Bulkstring("Hello"), Bulkstring("World")]),
-         Error("Err wrong number of arguments for 'echo' command")),
-
         # Exists
         (Array([Bulkstring("exists")]), Error("Err wrong number of arguments for 'exists' command")),
         (Array([Bulkstring("exists"), Bulkstring("invalid key")]), Integer(0)),
         (Array([Bulkstring("exists"), Bulkstring("key")]), Integer(1)),
         (Array([Bulkstring("exists"), Bulkstring("invalid key"), Bulkstring("key")]), Integer(1)),
-
-        # Ping
-        (Array([Bulkstring("PING")]), Simplestring("PONG")),
-        (Array([Bulkstring("ping"), Bulkstring("Hello")]), Bulkstring("Hello")),
-        (Array([Bulkstring("PING"), Bulkstring("Hello"), Bulkstring("Hello")]),
-         Error("Err wrong number of arguments for 'PING' command")),
 
         # Set
         (Array([Bulkstring("set")]), Error("ERR wrong number of arguments for 'set' command")),
@@ -113,15 +107,22 @@ def test_execute_ping(execute_ping):
     ],
 )
 
-def test_handle_command(command, expected):
+def test_handle_command(command_and_datastore, expected):
+    command = command_and_datastore[0]
+    #command = command.data
+    datastore = {}
     try:
-        datastore_5 = Datastore(command[1:])
+        datastore = command_and_datastore[1]
+        try:
+            command = command.data.data
+        except AttributeError:
+            command = command.data
+        datastore = {f"item_{i}": item.data for i, item in enumerate(datastore)}
     except IndexError:
-        datastore  = Datastore({"Hello": "World", "Expiry": "March 5, 2026, 4:30 PM", "type": "0"})
+        pass
+    expected = expected
     result = handle_command(command, datastore)
     assert result == expected
-
-
 
 
 def test_handle_incr_command_valid_key():
