@@ -46,11 +46,18 @@ class ConnectionHandler:
                         continue
                     datastore = {getattr(frames[1], "data"): "NONE", "Expiry": "NONE"}
                 elif len(frames) > 2 :
-                    kwarg_key = self.isvalid(frames, 1, "None"),
-                    kwarg_value = self.isvalid(frames, 2, "None"),
-                    kwarg_ex_px = self.isvalid(frames, 3, "Expiry"),
-                    kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
-                    datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
+                    if cmd == "LRANGE":
+                        kwarg_arr = self.isvalid(frames, 1, "None"),
+                        kwarg_arr_list = self.isvalid(frames, 2, "None"),
+                        kwarg_arr_start = self.isvalid(frames, 3, "None"),
+                        kwarg_arr_end = self.isvalid(frames, 4, "None")
+                        datastore = {kwarg_arr[0]: kwarg_arr_start[0], "end": kwarg_arr_end[0]}
+                    else:
+                        kwarg_key = self.isvalid(frames, 1, "None"),
+                        kwarg_value = self.isvalid(frames, 2, "None"),
+                        kwarg_ex_px = self.isvalid(frames, 3, "Expiry"),
+                        kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
+                        datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
                     print(datastore)
             result = command_handler.handle_command(cmd, datastore)
             print("Result: " + str(result))
@@ -69,8 +76,8 @@ class ConnectionHandler:
 
 
     def resp_serialized(self, data: str):
-        if data is None or "":
-            return "OK"
+        if data is None or "" or isinstance(data, int):
+            return f"+OK"
         else:
             length = 1 # hardwired
             # build:

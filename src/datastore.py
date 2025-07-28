@@ -8,6 +8,7 @@ from protocol_handler import Bulkstring, Array, Error, Integer, Simplestring
 
 class Datastore:
     def __init__(self, data:dict):
+        self.all_keys = []
         if hasattr(data, 'data'):
             self.data = data.data
         else:
@@ -15,7 +16,11 @@ class Datastore:
         self._data = []
         self._lock = Lock()
         self.keys = list(data.keys())
-        self.key = self.keys[0]
+        try:
+            self.key = self.keys[0]
+        except IndexError:
+            return "-Error"
+        self.all_keys.append(self.key)
 
     # _data is a dict: key: str, value: str, expiry:int, type: int
     def log(self, data):
@@ -43,32 +48,30 @@ class Datastore:
             self._data.append(data)
             return data
 
-
     def incr(self, data:dict):
         try: #with self._lock:
             v = 0
-            def _incr(ds):
-                key = list(ds.keys())[0]
-                v =  str(int(key) + 1)
-                return v
-            map(_incr,self._data)
-            return v
+            key = data.key
+            print("incre key", key)
+            v = str(self.Get(key) + 1)
+            print(v)
+            return f"(integer) {v}"
         except Exception as e:
-            print(e)
+            print("INCR exception", e)
             return e
 
     def decr(self, data):
         try: #with self._lock:
             v = 0
-            def _decr(ds):
-                key = list(ds.keys())[0]
+            def _decr(data):
+                key = list(data.key())[0]
                 v = str(int(key) - 1)
                 return v
-            map(_decr,self._data)
-            return v
+            map(_decr,self.data)
+            return f"(integer) {v}"
 
         except Exception as e:
-            print(e)
+            print("DECR Exception", e)
             return e
 
     def Len(self):
