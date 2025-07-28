@@ -50,7 +50,7 @@ class Expiry:
                         return self._arr[_]
 
     def get_value(self, ds_key):
-        if isinstance(ds_key, str):
+        if isinstance(ds_key, str) or ds_key["Expiry"] or isinstance(ds_key, int):
             return ds_key
         if not isinstance(ds_key["Expiry"], datetime):
             return ds_key

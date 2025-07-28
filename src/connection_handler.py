@@ -1,5 +1,5 @@
 
-from protocol_handler import parse_frame, Bulkstring, Array, Error, Integer, Simplestring
+from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplestring
 import command_handler
 class ConnectionHandler:
     def __init__(self, conn):
@@ -10,7 +10,7 @@ class ConnectionHandler:
             data = self.conn.recv(4096)
             if not data:  # <-- peer hung up
                 break
-            frames, _ = parse_frame(data)
+            frames, _ = Parser.parse_frame(data)
             cmd = frames[0].data.upper()
             print("Command: " + cmd)
             if cmd == 'COMMAND':  #

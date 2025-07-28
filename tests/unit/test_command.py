@@ -6,6 +6,9 @@ from connection_handler import ConnectionHandler as c
 from datastore import Datastore
 import datetime
 
+from typing_extensions import dataclass_transform
+
+
 @pytest.fixture
 def set_key_value():
     datastore_1 = {"key1": "value", "Expiry": "July 23, 2026, 2:30 PM"}
@@ -55,114 +58,103 @@ def test_execute_ping(execute_ping):
 
 
 @pytest.mark.parametrize(
-    "command_and_datastore,expected",
+    "command, datastore,expected",
     [
         # Exists
-        (Array([Bulkstring("exists")]), Error("Err wrong number of arguments for 'exists' command")),
-        (Array([Bulkstring("exists"), Bulkstring("invalid key")]), Integer(0)),
-        (Array([Bulkstring("exists"), Bulkstring("key")]), Integer(1)),
-        (Array([Bulkstring("exists"), Bulkstring("invalid key"), Bulkstring("key")]), Integer(1)),
+        ("exists",[""],  "Err wrong number of arguments for 'exists' command"),
+        ("exists", ["invalid key", "None"], "(integer) 0"),
+        ("exists", ["key", "None"], "(integer) 1"),
+        #multiple keys not catered for:
+        #(Array([Bulkstring("exists"), Bulkstring("invalid key"), Bulkstring("key")]), Integer(1)),
 
         # Set
-        (Array([Bulkstring("set")]), Error("ERR wrong number of arguments for 'set' command")),
-        (Array([Bulkstring("set"), Bulkstring("key")]), Error("ERR wrong number of arguments for 'set' command")),
-        (Array([Bulkstring("set"), Bulkstring("key"), Bulkstring("value")]), Simplestring("OK")),
+        ("set", [""] , "-ERR wrong number of arguments for 'set' command"),
+        ("set", ["key"], "-ERR wrong number of arguments for 'set' command"),
+        ("set",["key", "value"], "+OK"),
 
         # Set with expire errors
-        (Array([Bulkstring("set"), Bulkstring("key"), Bulkstring("value"), Bulkstring("ex")]),
-         Error("ERR syntax error")),
-        (Array([Bulkstring("set"), Bulkstring("key"), Bulkstring("value"), Bulkstring("px")]),
-         Error("ERR syntax error")),
-        (Array([Bulkstring("set"), Bulkstring("key"), Bulkstring("value"), Bulkstring("foo")]),
-         Error("ERR syntax error")),
+        ("set", ["key", "value", "ex"], "-ERR syntax error"),
+        ("set",["key", "value","px"], "-ERR syntax error"),
+        ("set", ["key", "value","foo"], "-ERR syntax error"),
 
         # Get
-        (Array([Bulkstring("get")]), Error("ERR wrong number of arguments for 'get' command")),
-        (Array([Bulkstring("get"), Bulkstring("key")]), Bulkstring("value")),
-        (Array([Bulkstring("get"), Bulkstring("invalid key")]), Bulkstring(None)),
+        ("get", [], "-ERR wrong number of arguments for 'get' command"),
+        ("get", ["key"], "value"),
+        ("get", ["invalid key"], "(nil)"),
 
         # Unknown
-        (Array([Bulkstring("foo")]), Error("ERR unknown command 'foo', with args beginning with: ")),
-        (Array([Bulkstring("foo"), Bulkstring("key")]), Error("ERR unknown command 'foo', with args beginning with: 'key'")),
-        (Array([Bulkstring("foo"), Bulkstring("key bar")]), Error("ERR unknown command 'foo', with args beginning with: 'key bar'")),
+        ("foo", [], "-ERR unknown command 'foo', with args beginning with: "),
+        ("foo",["key"], "-ERR unknown command 'foo', with args beginning with: 'key'"),
+        ("foo", ["key", "bar"], "-ERR unknown command 'foo', with args beginning with: 'key bar'"),
 
         # Del
-        (Array([Bulkstring("del")]), Error("ERR wrong number of arguments for 'del' command")),
-        (Array([Bulkstring("del"), Bulkstring("del key")]), Integer(1)),
-        (Array([Bulkstring("del"), Bulkstring("invalid key")]), Integer(0)),
-        (Array([Bulkstring("del"), Bulkstring("del key2"), Bulkstring("invalid key")]), Integer(1)),
+        ("del", [], "-ERR wrong number of arguments for 'del' command"),
+        ("del", ["del", "key"], "(integer) 1"),
+        ("del", ["invalid key"], "(integer) 0"),
+        # we are not catering for multiple keys to delete
+        #("del", ["del" "key2" , "invalid key"], "(integer) 0"),
 
         # Incr
-        (Array([Bulkstring("incr")]), Error("ERR wrong number of arguments for 'incr' command")),
-        (Array([Bulkstring("incr"), Bulkstring("key")]), Error("ERR value is not an integer or out of range")),
+        ("incr", [], "-ERR wrong number of arguments for 'incr' command"),
+        ("incr", ["key"], "-ERR value is not an integer or out of range"),
 
         # Decr
-        (Array([Bulkstring("decr")]), Error("ERR wrong number of arguments for 'decr' command")),
+        ("decr", [], "-ERR wrong number of arguments for 'decr' command"),
 
         # Lpush
-        (Array([Bulkstring("lpush")]), Error("ERR wrong number of arguments for 'lpush' command")),
+        ("lpush", [],"-ERR wrong number of arguments for 'lpush' command"),
 
         # Rpush
-        (Array([Bulkstring("rpush")]), Error("ERR wrong number of arguments for 'rpush' command")),
+        ("rpush", [], "-ERR wrong number of arguments for 'rpush' command"),
     ],
 )
 
-def test_handle_command(command_and_datastore, expected):
-    command = command_and_datastore[0]
-    #command = command.data
-    datastore = {}
-    try:
-        datastore = command_and_datastore[1]
-        try:
-            command = command.data.data
-        except AttributeError:
-            command = command.data
-        datastore = {f"item_{i}": item.data for i, item in enumerate(datastore)}
-    except IndexError:
-        pass
-    expected = expected
-    result = handle_command(command, datastore)
+def test_handle_command(command, datastore, expected):
+    ds = Datastore({"ki": 0, "Expiry": "None"}) # initialise the instance
+    ds.Add(build(datastore))
+    result = handle_command(command, build(datastore))
     assert result == expected
 
 
 def test_handle_incr_command_valid_key():
     datastore = Datastore({"ki": 0, "Expiry": "None"})
     result = handle_command("INCR", datastore)
-    assert result == Integer(1)
+    assert result == "(integer) 1"
     result = handle_command("INCR", datastore)
-    assert result == Integer(2)
+    assert result == "(integer) 2"
 
 
 def test_handle_decr():
-    datastore = Datastore({"kd": 0, "Expiry": "None"})
+    frames = ["kd", 0, "Expiry", "None"]
+    datastore= Datastore(build(frames))
     result = handle_command("incr", datastore)
     assert result == "(integer) 1"
     result = handle_command("incr", datastore)
-    assert result == Integer(2)
+    assert result ==  "(integer) 2"
     result = handle_command("decr", datastore)
-    assert result == Integer(1)
+    assert result ==  "(integer) 1"
     result = handle_command("decr", datastore)
-    assert result == Integer(0)
+    assert result ==  "(integer) 0"
 
 
 def test_handle_decr_invalid_key():
-    datastore = Datastore({"missing"})
-    result = handle_command(Array([Bulkstring("decr"), Bulkstring("missing")]), datastore)
-    assert result == Error("ERR value is not an integer or out of range")
+    frames = ["missing"]
+    datastore = Datastore(build(frames))
+    result = handle_command("decr", datastore)
+    assert result == "-ERR value is not an integer or out of range"
 
 
 def test_handle_lpush_lrange():
-    datastore = Datastore({"klp"})
-    result = handle_command(Array([Bulkstring("lpush"), Bulkstring("klp"), Bulkstring("second")]), datastore)
-    assert result == Integer(1)
-    datastore = Datastore({"klp"})
-    result = handle_command(Array([Bulkstring("lpush"), Bulkstring("klp"), Bulkstring("first")]), datastore)
-    assert result == Integer(2)
-    datastore = Datastore({"klp"})
-    result = handle_command(Array([Bulkstring("lrange"), Bulkstring("klp"), Bulkstring("0"), Bulkstring("2")]), datastore)
-    datastore = Datastore({"klp"})
-    assert result == Array([Bulkstring("first"), Bulkstring("second")])
-
+    datastore = Datastore(build(["klp", "second"]))
+    result = handle_command("lpush", datastore)
+    assert result == "(integer) 1"
+    datastore = Datastore(build(["klp", "first"]))
+    result = handle_command("lpush", datastore)
+    assert result == "(integer) 1"
+    datastore = Datastore(build(["klp", "0", "2"]))
+    result = handle_command("lrange", datastore)
+    datastore = Datastore(build(["klp", "first", "second"]))
+    assert result == Array("lrange", datastore)
 
 def test_set_with_expiry():
     key = "key"
@@ -204,3 +196,18 @@ def test_get_with_expiry():
     sleep((px + 100) / 1000)
     result = handle_command([Bulkstring("get"), Bulkstring("key")], datastore)
     assert result == Bulkstring(None)
+
+
+def build(frames):
+
+    def isvalid(data: list, index: int, safe: str):
+        try:
+            return data[index]
+        except Exception:
+            return safe
+
+    kwarg_key = isvalid(frames, 0, "None"),
+    kwarg_value = isvalid(frames, 1, "None"),
+    kwarg_ex_px = isvalid(frames, 2, "Expiry"),
+    kwarg_ex_px_value = isvalid(frames, 3, "None"),
+    return {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}

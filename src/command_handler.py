@@ -2,7 +2,7 @@ from typing_extensions import dataclass_transform
 
 from datastore import Datastore
 from expiry import Expiry
-from protocol_handler import parse_frame, Bulkstring, Array, Error, Integer, Simplestring
+from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplestring
 
 'create an instance of Datastore and Expiry. They have to be not None'
 cache = Datastore({"key": "value", "Expiry": "value"})
@@ -40,7 +40,7 @@ def handle_command(command, datastore, persister=None):
         case "SYNC":
             return _handle_sync(datastore)
         case _:
-            return _handle_unrecognised_command(command)
+            return _handle_unrecognised_command(command, datastore)
 
 def _handle_del(datastore, persister):
     # forst check if it already exists
@@ -58,13 +58,16 @@ def _handle_decr(data, persister):
     return cache.decr(data)
 
 def _handle_exists(datastore):
+    print(datastore)
+    if datastore == "" or datastore == {}  or datastore == None:
+        return "-Err wrong number of arguments for 'exists' command"
     if cache.Add(datastore) == "(already exists)":
         return "(integer) 1"
     else:
         return "(integer) 0"
 
 def _handle_lrange(datastore):
-    #datastore {arr: start, 'end', end}
+    #datastore {arr: start, 'end': end}
     try:
         arr_name = datastore.keys[0]
         start = datastore.keys[1]
@@ -176,8 +179,8 @@ def _handle_config():
 def _handle_del(self, datastore, persister):
     _handle_get(datastore)
 
-def _handle_unrecognised_command(command):
-    return ""
+def _handle_unrecognised_command(command: str, datastore: list):
+    return f"-ERR unknown command {command}, with args beginning with: {" ".join(datastore)} "
 
 def _handle_set(datastore, persister):
     if datastore:

@@ -49,7 +49,10 @@ class Datastore:
     def Add(self, data:dict):
         with self._lock:   #
             keys = list(data.keys())
-            key = keys[0]
+            try:
+                key = keys[0]
+            except IndexError:
+                return "-ERR wrong number of arguments for 'set' command"
             for datastore in self._data:
                 if key  == list(datastore.keys())[0]:
                     print(f"Key {key} already exists")
