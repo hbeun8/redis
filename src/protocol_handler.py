@@ -78,7 +78,7 @@ class Parser:
     def parse_frame(self, buffer):
         """
         Parses a RESP buffer.
-        Args: buffer (bytes): The buffer containing the frame data.
+        Args: buffer (bytes): The buffer contains the frame data.
         Returns: tuple: (frame, size)
         """
         if not buffer or len(buffer) < 3:

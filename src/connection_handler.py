@@ -1,6 +1,7 @@
 
 from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplestring
 import command_handler
+
 class ConnectionHandler:
     def __init__(self, conn):
         self.conn = conn
@@ -10,7 +11,8 @@ class ConnectionHandler:
             data = self.conn.recv(4096)
             if not data:  # <-- peer hung up
                 break
-            frames, _ = Parser.parse_frame(data)
+            parser = Parser(data)
+            frames, _ = parser.parse_frame(data)
             cmd = frames[0].data.upper()
             print("Command: " + cmd)
             if cmd == 'COMMAND':  #
@@ -63,7 +65,7 @@ class ConnectionHandler:
                     print(datastore)
             result = command_handler.handle_command(cmd, datastore)
             print("Result: " + str(result))
-            output = self.resp_serialized(result)  # Consider appending any error message here
+            output = self.resp_serialized(str(result))  # Consider appending any error message here
             if output:
                 print(output.encode())
                 self.conn.send(output.encode())
@@ -80,7 +82,7 @@ class ConnectionHandler:
     def resp_serialized(self, data: str):
         try:
             if data is None or "" or isinstance(data, int):
-                return f"+OK"
+                return f"+OK\r\n"
             else:
                 length = 1 # hardwired
                 _comp = f"${len(data)}\r\n{data}\r\n"

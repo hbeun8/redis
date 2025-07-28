@@ -194,7 +194,7 @@ def _handle_get(datastore):
     if datastore:
             result = e.get_value(cache.Get(datastore)) # returns array of datastore and then returns key value.
             #print(result)
-            return result #resp_encoder_get(result)
+            return result
     else:
         return "-ERROR"
 
