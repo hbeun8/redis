@@ -26,6 +26,9 @@ class Datastore:
     def log(self, data):
         print("(logged)")
 
+    def Remove(self, data):
+        self._data.remove(data)
+
     def Get(self, data):
         # Lock not required in read-only mode.
         keys = list(data.keys())
@@ -50,12 +53,13 @@ class Datastore:
 
     def incr(self, data:dict):
         try: #with self._lock:
-            v = 0
-            key = data.key
-            print("incre key", key)
-            v = str(self.Get(key) + 1)
-            print(v)
-            return f"(integer) {v}"
+            if self.Add(data) == "(already exists)":
+                v = 0
+                key = data.key
+                print("incr key", key)
+                v = str(self.Get(key) + 1)
+                print(v)
+                return f"(integer) {v}"
         except Exception as e:
             print("INCR exception", e)
             return e

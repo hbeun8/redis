@@ -10,20 +10,14 @@ e = Expiry({"key": "value", "Expiry": "value"})
 
 def handle_command(command, datastore, persister=None):
 
-    #print("Datastore:", datastore)
-    #print("COMMAND FRAME:", command)
-    #print("COMMAND TYPE:", type(command))
-    #print("COMMAND DATA:", datastore)
     cache.log(command)
-    #print("Datastore keys:", datastore.keys())
-    #print("Datastore keys:", datastore.values())
     match command:
         case "CONFIG":
             return _handle_config()
         case "DECR":
             return _handle_decr(datastore, persister)
         case "DEL":
-            return _handle_del(command, datastore, persister)
+            return _handle_del(datastore, persister)
         case "ECHO":
             return _handle_echo(datastore)
         case "EXISTS":
@@ -48,8 +42,16 @@ def handle_command(command, datastore, persister=None):
         case _:
             return _handle_unrecognised_command(command)
 
+def _handle_del(datastore, persister):
+    # forst check if it already exists
+    if cache.Add(datastore) == "(already exists)":
+        cache.Remove(datastore)
+        return "(integer) 1"
+    else:
+        return "(integer) 0"
+
 def _handle_incr(data, persister):
-    print(data)
+    cache.log(data)
     return cache.incr(data)
 
 def _handle_decr(data, persister):

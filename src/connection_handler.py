@@ -23,17 +23,19 @@ class ConnectionHandler:
             if cmd == 'ECHO':
                 if len(frames) == 2:
                     ds = frames[1].data
+                    _echo_data = self.resp_serialized(ds)
+                    self.conn.send(_echo_data.encode())
+                    continue
                 elif len(frames) > 2:
-                    ds="-Err message\r\n"
-                    self.conn.send(ds.encode())
+                    ds=b'-Err\r\n'
+                    self.conn.send(ds)
                     continue
                 else:
-                    ds="-Err message\r\n"
-                _echo_data = self.resp_serialized(ds)
-                self.conn.send(_echo_data.encode())
-                continue
+                    ds=b'-Err\r\n'
+                    self.conn.send(ds)
+                    continue
             # default option
-            option = "vanilla"
+            option = 'vanilla'
             datastore =  {} # proxy for now
             if cmd == 'GET':
                 kwarg_key = self.isvalid(frames, 1, "None"),
@@ -76,15 +78,15 @@ class ConnectionHandler:
 
 
     def resp_serialized(self, data: str):
-        if data is None or "" or isinstance(data, int):
-            return f"+OK"
-        else:
-            length = 1 # hardwired
-            # build:
-            #_comp = f"*{length}\r\n"
-            #data_comp = ''
-            _comp = f"${len(data)}\r\n{data}\r\n"
-            return _comp
+        try:
+            if data is None or "" or isinstance(data, int):
+                return f"+OK"
+            else:
+                length = 1 # hardwired
+                _comp = f"${len(data)}\r\n{data}\r\n"
+                return _comp
+        except Exception as e:
+            return f"-{e}"
 
     def handle_hex_dump(self):
         data = self.conn.recv(1024)
