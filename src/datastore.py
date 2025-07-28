@@ -33,9 +33,14 @@ class Datastore:
     def Get(self, data):
         # Lock not required in read-only mode.
         keys = list(data.keys())
+        print("(get) keys", keys)
         key = keys[0]
+        print("Key ", key)
         for datastore in self._data:
+            print("(get) datastore", datastore)
             if key in datastore.keys():
+                print("(get) datastore", key)
+                print("(get datastore at key ", datastore[key])
                 return datastore[key]
             else:
                 print(f"Key {key} not found")
@@ -46,7 +51,7 @@ class Datastore:
             keys = list(data.keys())
             key = keys[0]
             for datastore in self._data:
-                if key in datastore.keys():
+                if key  == list(datastore.keys())[0]:
                     print(f"Key {key} already exists")
                     return "(already exists)"
             self._data.append(data)
@@ -57,26 +62,27 @@ class Datastore:
             keys = list(data.keys())
             key = keys[0]
             for datastore in self._data:
-                if key in datastore.keys():
-                    datastore[key] = data[key]
+                if key  == list(datastore.keys())[0]:
+                    print(f"Key {key} already exists")
+                    print(f"Key {key} Overrided")
+                    # remove all data
+                    self._data.remove(datastore)
+            self._data.append(data)
             return data
 
     def incr(self, data:dict):
         try: #with self._lock:
             if self.Add(data) == "(already exists)":
                 for datastore in self._data:
-                    for key in datastore.keys():
-                        if key in list(data.keys()):
-                            print(f"Key {key} already exists in data.keys")
-                            v = datastore[key]
-                            print("Key value is ", v)
-                            print(f"Remove {datastore}")
-                            self._data.remove(datastore)
-                            new_v = int(v) + 1
-                            datastore[key] = new_v
-                            print(f"Appended {datastore}")
-                            self._data.append(datastore)
-                            return f"(integer) {new_v}"
+                    key = list(datastore.keys())[0]
+                    if key == list(data.keys())[0]:
+                        v = datastore[key]
+                        # remove datastore
+                        self._data.remove(datastore)
+                        new_v = int(v) + 1
+                        datastore[key] = new_v
+                        self._data.append(datastore)
+                        return f"(integer) {new_v}"
             else:
                 return "-Error: key not found"
         except Exception as e:
@@ -87,18 +93,15 @@ class Datastore:
         try: #with self._lock:
             if self.Add(data) == "(already exists)":
                 for datastore in self._data:
-                    for key in datastore.keys():
-                        if key in list(data.keys()):
-                            print(f"Key {key} already exists in data.keys")
-                            v = datastore[key]
-                            print("Key value is ", v)
-                            print(f"Remove {datastore}")
-                            self._data.remove(datastore)
-                            new_v = int(v) - 1
-                            datastore[key] = new_v
-                            print(f"Appended {datastore}")
-                            self._data.append(datastore)
-                            return f"(integer) {new_v}"
+                    key = list(datastore.keys())[0]
+                    if key == list(data.keys())[0]:
+                        v = datastore[key]
+                        # remove datastore
+                        self._data.remove(datastore)
+                        new_v = int(v) - 1
+                        datastore[key] = new_v
+                        self._data.append(datastore)
+                        return f"(integer) {new_v}"
             else:
                 return "-Error: key not found"
         except Exception as e:

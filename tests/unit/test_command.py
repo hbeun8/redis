@@ -126,22 +126,22 @@ def test_handle_command(command_and_datastore, expected):
 
 
 def test_handle_incr_command_valid_key():
-    datastore = Datastore({"ki"})
-    result = handle_command(Array([Bulkstring("incr"), Bulkstring("ki")]), datastore)
+    datastore = Datastore({"ki": 0, "Expiry": "None"})
+    result = handle_command("INCR", datastore)
     assert result == Integer(1)
-    result = handle_command(Array([Bulkstring("incr"), Bulkstring("ki")]), datastore)
+    result = handle_command("INCR", datastore)
     assert result == Integer(2)
 
 
 def test_handle_decr():
-    datastore = Datastore({"kd"})
-    result = handle_command(Array([Bulkstring("incr"), Bulkstring("kd")]), datastore)
-    assert result == Integer(1)
-    result = handle_command(Array([Bulkstring("incr"), Bulkstring("kd")]), datastore)
+    datastore = Datastore({"kd": 0, "Expiry": "None"})
+    result = handle_command("incr", datastore)
+    assert result == "(integer) 1"
+    result = handle_command("incr", datastore)
     assert result == Integer(2)
-    result = handle_command(Array([Bulkstring("decr"), Bulkstring("kd")]), datastore)
+    result = handle_command("decr", datastore)
     assert result == Integer(1)
-    result = handle_command(Array([Bulkstring("decr"), Bulkstring("kd")]), datastore)
+    result = handle_command("decr", datastore)
     assert result == Integer(0)
 
 

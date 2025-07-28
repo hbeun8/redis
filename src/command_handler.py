@@ -182,7 +182,7 @@ def _handle_unrecognised_command(command):
 def _handle_set(datastore, persister):
     if datastore:
         for key in datastore.keys():
-                if e.ladd(cache.Add(datastore)): # cache.add and e.ladd returns array of datastore
+                if e.ladd(cache.AddX(datastore)): # cache.add and e.ladd returns array of datastore
                     return 'OK'
     else:
         return "-Error"
