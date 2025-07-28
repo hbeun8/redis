@@ -51,7 +51,7 @@ def _handle_del(datastore, persister):
         return "(integer) 0"
 
 def _handle_incr(data, persister):
-    cache.log(data)
+    print("incr")
     return cache.incr(data)
 
 def _handle_decr(data, persister):

@@ -18,6 +18,7 @@ class Datastore:
         self.keys = list(data.keys())
         try:
             self.key = self.keys[0]
+            self.value = self.data[self.key]
         except IndexError:
             return "-Error"
         self.all_keys.append(self.key)
@@ -51,31 +52,57 @@ class Datastore:
             self._data.append(data)
             return data
 
+    def AddX(self, data:dict):
+        with self._lock:   #
+            keys = list(data.keys())
+            key = keys[0]
+            for datastore in self._data:
+                if key in datastore.keys():
+                    datastore[key] = data[key]
+            return data
+
     def incr(self, data:dict):
         try: #with self._lock:
             if self.Add(data) == "(already exists)":
-                v = 0
-                key = data.key
-                print("incr key", key)
-                v = str(self.Get(key) + 1)
-                print(v)
-                return f"(integer) {v}"
+                for datastore in self._data:
+                    for key in datastore.keys():
+                        if key in list(data.keys()):
+                            print(f"Key {key} already exists in data.keys")
+                            v = datastore[key]
+                            print("Key value is ", v)
+                            print(f"Remove {datastore}")
+                            self._data.remove(datastore)
+                            new_v = int(v) + 1
+                            datastore[key] = new_v
+                            print(f"Appended {datastore}")
+                            self._data.append(datastore)
+                            return f"(integer) {new_v}"
+            else:
+                return "-Error: key not found"
         except Exception as e:
             print("INCR exception", e)
             return e
 
-    def decr(self, data):
+    def decr(self, data:dict):
         try: #with self._lock:
-            v = 0
-            def _decr(data):
-                key = list(data.key())[0]
-                v = str(int(key) - 1)
-                return v
-            map(_decr,self.data)
-            return f"(integer) {v}"
-
+            if self.Add(data) == "(already exists)":
+                for datastore in self._data:
+                    for key in datastore.keys():
+                        if key in list(data.keys()):
+                            print(f"Key {key} already exists in data.keys")
+                            v = datastore[key]
+                            print("Key value is ", v)
+                            print(f"Remove {datastore}")
+                            self._data.remove(datastore)
+                            new_v = int(v) - 1
+                            datastore[key] = new_v
+                            print(f"Appended {datastore}")
+                            self._data.append(datastore)
+                            return f"(integer) {new_v}"
+            else:
+                return "-Error: key not found"
         except Exception as e:
-            print("DECR Exception", e)
+            print("INCR exception", e)
             return e
 
     def Len(self):
