@@ -38,6 +38,7 @@ class ConnectionHandler:
             # default option
             option = 'vanilla'
             datastore =  {} # proxy for now
+
             if cmd == 'GET':
                 kwarg_key = self.isvalid(frames, 1, "None"),
                 if option == "vanilla":

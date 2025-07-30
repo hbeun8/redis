@@ -118,3 +118,25 @@ def test_datastore_remove_base_case():
     c.Add("Name", "Varun:25/07/25:123")
     result = c.Remove("Name")
     assert result == "(integer) 1"
+
+def test_datastore_exists_base_case_1():
+    data = {"Name": "Varun", "Expiry": "25/07/25", "Type": 123}
+    c = Datastore(data)
+    c.Add("Name", "Varun:25/07/25:123")
+    result = c.Exists("Name")
+    assert result == "(integer) 1"
+
+def test_datastore_exists_base_case_0():
+    data = {"Name": "Varun", "Expiry": "25/07/25", "Type": 123}
+    c = Datastore(data)
+    c.Add("Name", "Varun:25/07/25:123")
+    result = c.Exists("NoName")
+    assert result == "(integer) 0"
+
+
+def test_datastore_exists_missing_key():
+    data = {"Name": "Varun", "Expiry": "25/07/25", "Type": 123}
+    c = Datastore(data)
+    c.Add("Name", "Varun:25/07/25:123")
+    result = c.Exists("")
+    assert result == "(integer) 0"

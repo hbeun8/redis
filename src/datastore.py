@@ -1,6 +1,7 @@
 
 from threading import Lock
-
+from datetime import datetime, timedelta
+from dateutil.parser import parse
 
 class Dict:
     def __init__(self, data: dict):
@@ -10,6 +11,7 @@ class Dict:
         self.type = data["type"] if "type" in data else None
         self.s = f"{self.value}:{self.expiry}:{self.type}"
         self.u_s = data
+        self.curr = datetime.now()
 
 class Datastore:
     def __init__(self, data: dict):
@@ -30,6 +32,17 @@ class Datastore:
             return v
         except AttributeError:
             return "(nil)"
+
+    def Get_w_Expiry(self, k):
+       # if the key is expired
+        return 0
+
+    def Exists(self, k):
+        with self._lock:
+            if hasattr(self, k):
+                return "(integer) 1"
+            else:
+                return "(integer) 0"
 
     def Add(self, k, v):
         with self._lock:

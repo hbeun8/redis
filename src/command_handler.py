@@ -64,15 +64,13 @@ def _handle_decr(datastore, persister):
     return cache.decr(k)
 
 def _handle_exists(datastore):
-    k = datastore.key
-    v = datastore.s
-
-    if k == "" or k == None:
+    try:
+        k = datastore.key
+        if k == "" or k is None:
+            return "-Err wrong number of arguments for 'exists' command"
+        return cache.Exists(k)
+    except Exception as e:
         return "-Err wrong number of arguments for 'exists' command"
-    if cache.Add(k, v) == "(already exists)":
-        return "(integer) 1"
-    else:
-        return "(integer) 0"
 
 def _handle_lrange(datastore):
     #datastore {arr: start, 'end': end}
