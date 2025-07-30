@@ -12,7 +12,7 @@ Consider fsync policy to speed it up.
 
 '''
 
-from protocol_handler import parse_frame
+from protocol_handler import Parser
 from command_handler import handle_command
 import threading
 

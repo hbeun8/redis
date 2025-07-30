@@ -14,7 +14,6 @@ class ConnectionHandler:
             parser = Parser(data)
             frames, _ = parser.parse_frame(data)
             cmd = frames[0].data.upper()
-            print("Command: " + cmd)
             if cmd == 'COMMAND':  #
                 self.conn.send(b"+OK'\r\n")
                 continue  # stay connected
@@ -62,12 +61,10 @@ class ConnectionHandler:
                         kwarg_ex_px = self.isvalid(frames, 3, "Expiry"),
                         kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
                         datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
-                    print(datastore)
+
             result = command_handler.handle_command(cmd, datastore)
-            print("Result: " + str(result))
             output = self.resp_serialized(str(result))  # Consider appending any error message here
             if output:
-                print(output.encode())
                 self.conn.send(output.encode())
             else:
                 self.conn.send(b'\n')
@@ -124,4 +121,4 @@ class ConnectionHandler:
             chunk = data[i:i + width]
             hex_chunk = ' '.join(f"{b:02x}" for b in chunk)
             ascii_chunk = ''.join((chr(b) if 32 <= b < 127 else '.') for b in chunk)
-            print(f"{i:08x}  {hex_chunk:<{width * 3}}  {ascii_chunk}")
+            #print(f"{i:08x}  {hex_chunk:<{width * 3}}  {ascii_chunk}")

@@ -6,7 +6,7 @@
 
 import pytest
 from protocol_handler import Parser, ParseError, Simplestring, Error, Integer, Bulkstring, Array  # Adjust imports as needed
-
+from command_handler import resp_encoder_get
 
 @pytest.mark.parametrize("buffer, expected", [
     # Simple string tests
@@ -58,21 +58,22 @@ def test_parse_frame_unexpected_type():
 @pytest.mark.parametrize(
     "message, expected",
      [
-        (Simplestring("0K"), b"0K"),
-        (Error("Error"), b"Err"),
-        (Integer(100), b"100"),
-        (Bulkstring("This is a Bulk String"), b"This is a Bulk String"),
-        (Bulkstring(""), b""),
-        (Bulkstring(None), b""),
-        (Array([]), b""),
-        (Array(None), b'*-1\r\n'),
+        ("0K", b"0K"),
+        ("Error", b"Err"),
+        (100, b"100"),
+        ("This is a Bulk String", b"This is a Bulk String"),
+        ("", b""),
+        (None, b""),
+        ([], b""),
+        ([None], b'*-1\r\n'),
         (
-            Array([Simplestring("String"), Integer(2), Simplestring("String2")]),
-            b"*3\r\n+String\r\n:2\r\n+String2\r\n",
+            ["String2"],
+            b"*1\r\n$7\r\nString2\r\n",
         ),
     ],
 )
 
 def test_encode_message(message, expected):
-    encoded_message = str(message.data).encode()
+
+    encoded_message = resp_encoder_get(message).encode()
     assert encoded_message == expected

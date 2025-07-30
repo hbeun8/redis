@@ -82,8 +82,6 @@ python -m pytest tests/unit
 # Run only integration tests
 python -m pytest tests/integration
 
-# Run only protocol tests
-python -m pytest tests/protocol
 ```
 
 ## Running the Server
@@ -110,3 +108,21 @@ python main.py -p 8891 -e true
 python main.py -p 8001 -i I
 
 ```
+
+## Performance
+1) MVP: 
+SET: 6796.25 requests per second, p50=5.023 msec                   
+GET: 5263.43 requests per second, p50=7.023 msec 
+
+2) Optimizations*:
+   1) pypy:
+      SET: 16286.65 requests per second, p50=2.127 msec                   
+      GET: 19470.40 requests per second, p50=1.815 msec 
+   2) Code Improvements (builtin):
+      SET: 20691.08 requests per second, p50=1.935 msec
+      GET: 24160.43 requests per second, p50=1.671 msec
+   3) Concurrency (aysncio):
+      
+## BENCHMARK:
+SET: 71684.59 requests per second, p50=0.543 msec                   
+GET: 73475.39 requests per second, p50=0.543 msec

@@ -14,8 +14,10 @@ from dataclasses import dataclass
 
 @dataclass
 class ParseError(Exception):
-    """Custom exception for parse errors."""
-    pass
+    message: str = "Unexpected parse error"
+
+    def __str__(self):
+        return self.message
 
 @dataclass
 class Simplestring:
@@ -119,6 +121,8 @@ class Parser:
                 if len(buffer) < end + 2 or buffer[end:end + 2] != b'\r\n':
                     return None, 0
                 value = buffer[start:end].decode()
+                if value is None:
+                    return None, 0
                 return Bulkstring(value), end + 2
 
             case b'*':
@@ -146,4 +150,4 @@ class Parser:
 
             case _:
                 # Unknown frame type
-                return None, 0
+                raise ParseError("Unexpected type code")

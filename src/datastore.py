@@ -1,121 +1,92 @@
 
-'''
-Datastore 
-'''
-
 from threading import Lock
-from protocol_handler import Bulkstring, Array, Error, Integer, Simplestring
+
+
+class Dict:
+    def __init__(self, data: dict):
+        self.key = next(iter(data))
+        self.value = data[self.key]
+        self.expiry = data["Expiry"] if "Expiry" in data else None
+        self.type = data["type"] if "type" in data else None
+        self.s = f"{self.value}:{self.expiry}:{self.type}"
+        self.u_s = data
 
 class Datastore:
-    def __init__(self, data:dict):
-        self.all_keys = []
-        if hasattr(data, 'data'):
-            self.data = data.data
-        else:
-            self.data = data
-        self._data = []
+    def __init__(self, data: dict):
         self._lock = Lock()
-        self.keys = list(data.keys())
-        try:
-            self.key = self.keys[0]
-            self.value = self.data[self.key]
-        except IndexError:
-            return "-Error"
-        self.all_keys.append(self.key)
 
-    # _data is a dict: key: str, value: str, expiry:int, type: int
-    def log(self, data):
-        print("(logged)")
+    def Remove(self, k):
+        with self._lock:
+            delattr(self, k)
 
-    def Remove(self, data):
-        self._data.remove(data)
-
-    def Get(self, data):
+    def Get(self, k):
         # Lock not required in read-only mode.
-        keys = list(data.keys())
-        print("(get) keys", keys)
-        key = keys[0]
-        print("Key ", key)
-        for datastore in self._data:
-            print("(get) datastore", datastore)
-            if key in datastore.keys():
-                print("(get) datastore", key)
-                print("(get datastore at key ", datastore[key])
-                return datastore[key]
-            else:
-                print(f"Key {key} not found")
-        return "(nil)"
+        try:
+            v = getattr(self, k)
+            return v
+        except AttributeError:
+            return "(nil)"
 
-    def Add(self, data:dict):
-        with self._lock:   #
-            keys = list(data.keys())
+    def Add(self, k, v):
+        with self._lock:
             try:
-                key = keys[0]
-            except IndexError:
-                return "-ERR wrong number of arguments for 'set' command"
-            for datastore in self._data:
-                if key  == list(datastore.keys())[0]:
-                    print(f"Key {key} already exists")
-                    return "(already exists)"
-            self._data.append(data)
-            return data
+                if hasattr(self, k):
+                    return "(already exists)" # we never reach this!
+                if v is None:
+                    return "-ERR wrong number of arguments for 'set' command"
+                if v is not None:
+                    setattr(self, k, v)
+                    return "+OK"
+                if v == "None:None:None" or v == "" or k == "" or k is None:
+                    return "-ERR wrong number of arguments for 'set' command"
+            except Exception as e:
+                return f"-ERR {e}"
 
     def AddX(self, data:dict):
         with self._lock:   #
-            keys = list(data.keys())
-            key = keys[0]
-            for datastore in self._data:
-                if key  == list(datastore.keys())[0]:
-                    print(f"Key {key} already exists")
-                    print(f"Key {key} Overrided")
-                    # remove all data
-                    self._data.remove(datastore)
-            self._data.append(data)
-            return data
+            try:
+                # Light Version
+                setattr(self._data, self.key, data)
+                return data
+            except Exception as e:
+                return f"-ERR {e}"
 
-    def incr(self, data:dict):
-        try: #with self._lock:
-            if self.Add(data) == "(already exists)":
-                for datastore in self._data:
-                    key = list(datastore.keys())[0]
-                    if key == list(data.keys())[0]:
-                        v = datastore[key]
-                        # remove datastore
-                        self._data.remove(datastore)
-                        new_v = int(v) + 1
-                        datastore[key] = new_v
-                        self._data.append(datastore)
-                        return f"(integer) {new_v}"
-            else:
-                return "-Error: key not found"
-        except Exception as e:
-            print("INCR exception", e)
-            return e
+    def incr(self, k):
+        with self._lock:
+            try:
+                if not hasattr(self, k):
+                    return "-Error: key not found"
+                s = getattr(self, k)
+                sep = s.find(":")
+                v = str(s[:sep])
+                if isinstance(int(v), int):
+                    new_v = str(int(v) + 1)
+                    new_s = new_v + s[sep:]
+                    setattr(self, k, new_s)
+                    return f"(integer) {new_v}"
+                return "-Error: Key not int"
+            except AttributeError as e:
+                return f"-Err {e}"
 
-    def decr(self, data:dict):
-        try: #with self._lock:
-            if self.Add(data) == "(already exists)":
-                for datastore in self._data:
-                    key = list(datastore.keys())[0]
-                    if key == list(data.keys())[0]:
-                        v = datastore[key]
-                        # remove datastore
-                        self._data.remove(datastore)
-                        new_v = int(v) - 1
-                        datastore[key] = new_v
-                        self._data.append(datastore)
-                        return f"(integer) {new_v}"
-            else:
-                return "-Error: key not found"
-        except Exception as e:
-            print("INCR exception", e)
-            return e
-
-    def Len(self):
-        return len(self._data)
+    def decr(self, k):
+        with self._lock:
+            try:
+                if not hasattr(self, k):
+                    return "-Error: key not found"
+                s = getattr(self, k)
+                sep = s.find(":")
+                v = str(s[:sep])
+                if not isinstance(int(v), int):
+                    return "-Error: Key not int"
+                new_v = str(int(v) - 1)
+                new_s = new_v + s[sep:]
+                setattr(self, k, new_s)
+                return f"(integer) {new_v}"
+            except AttributeError as e:
+                return f"-Err {e}"
 
     def keys(self):
-        return self.data.keys()
+        return list(self.data)
 
     def __getitem__(self, key):
         return self._data[key]
@@ -124,38 +95,4 @@ class Datastore:
         self._data[key] = value
 
     def __str__(self):
-        return f"Datastore({self._data})"
-'''
-import struct
-
-expiry_ms = 1724189999000  # epoch in ms
-packed_expiry = struct.pack("<BQ", 0xFD, expiry_ms)  # 0xFD + 64-bit little-endian
-
-value_type = 0  # e.g., string
-packed_type = struct.pack("B", value_type)
-
-# Task destructure
-@dataclass
-class Task:
-    task_id: int
-    response_queue: Queue
-    response: int = 0
-
-# thread doing some work    
-while True:
-    task = self._queue.get()
-    if task is not None:
-        task.response = task.val + 2
-        task.response_queue.put(task)
-        
-
-# Thread sending work
-result_queue = Queue()
-
-while True:
-    try:
-        v = # ... some value to be processed
-        processor.process(Task(v, result_queue))
-        result = result_queue.get()
-        print(result.response)
-'''
+        return f"Datastore({self.key}  {self.value})"

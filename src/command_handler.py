@@ -1,6 +1,6 @@
 from typing_extensions import dataclass_transform
 
-from datastore import Datastore
+from datastore import Datastore, Dict
 from expiry import Expiry
 from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplestring
 
@@ -8,9 +8,10 @@ from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplest
 cache = Datastore({"key": "value", "Expiry": "value"})
 e = Expiry({"key": "value", "Expiry": "value"})
 
-def handle_command(command, datastore, persister=None):
+def handle_command(command, dictionary, persister=None):
 
-    cache.log(command)
+    datastore = Dict(dictionary)
+
     match command:
         case "CONFIG":
             return _handle_config()
@@ -44,30 +45,39 @@ def handle_command(command, datastore, persister=None):
 
 def _handle_del(datastore, persister):
     # forst check if it already exists
-    if cache.Add(datastore) == "(already exists)":
-        cache.Remove(datastore)
+    k = datastore.key
+    v = datastore.s
+    if cache.Add(k, v) == "(already exists)":
+        cache.Remove(k)
         return "(integer) 1"
     else:
         return "(integer) 0"
 
-def _handle_incr(data, persister):
-    print("incr")
-    return cache.incr(data)
+def _handle_incr(datastore, persister):
+    k = datastore.key
+    v = datastore.s
+    return cache.incr(k)
 
-def _handle_decr(data, persister):
-    return cache.decr(data)
+def _handle_decr(datastore, persister):
+    k = datastore.key
+    v = datastore.s
+    return cache.decr(k)
 
 def _handle_exists(datastore):
-    print(datastore)
-    if datastore == "" or datastore == {}  or datastore == None:
+    k = datastore.key
+    v = datastore.s
+
+    if k == "" or k == None:
         return "-Err wrong number of arguments for 'exists' command"
-    if cache.Add(datastore) == "(already exists)":
+    if cache.Add(k, v) == "(already exists)":
         return "(integer) 1"
     else:
         return "(integer) 0"
 
 def _handle_lrange(datastore):
     #datastore {arr: start, 'end': end}
+    k = datastore.key
+    v = datastore.s
     try:
         arr_name = datastore.keys[0]
         start = datastore.keys[1]
@@ -92,7 +102,15 @@ def _handle_echo(data):
     except Exception as e:
         return "-Err"
 
-def resp_encoder_get(data: str):
+def resp_encoder_get(data):
+    if isinstance(data, list):
+        if len(data) == 0:
+            return ""
+        data = " ".join(data)
+        if data == [None]:
+            '*-1\r\n'
+    if data is None:
+        return ""
     return f"*1\r\n${len(data)}\r\n{data}\r\n"
 
 def _handle_ping(datastore):
@@ -100,7 +118,6 @@ def _handle_ping(datastore):
         return "PONG"
 
     except Exception as e:
-        print("Error in _handle_ping:", e)
         return f"-ERROR {str(e)}\r\n"
 
 def _handle_lpush(datastore, persister):
@@ -180,23 +197,23 @@ def _handle_del(self, datastore, persister):
     _handle_get(datastore)
 
 def _handle_unrecognised_command(command: str, datastore: list):
-    return f"-ERR unknown command {command}, with args beginning with: {" ".join(datastore)} "
+    return f"-ERR unknown command {command}, with args beginning with: {' '.join(datastore)} "
 
 def _handle_set(datastore, persister):
-    if datastore:
-        for key in datastore.keys():
-                if e.ladd(cache.AddX(datastore)): # cache.add and e.ladd returns array of datastore
-                    return 'OK'
-    else:
-        return "-Error"
+    try:
+        k = datastore.key
+        v = datastore.s
+        e.ladd(cache.Add(k, v)) # cache.add and e.ladd returns array of datastore
+        return 'OK'
+    except Exception as ex:
+        return f"-Error: {ex}"
 
 def _handle_get(datastore):
-    if datastore:
-            result = e.get_value(cache.Get(datastore)) # returns array of datastore and then returns key value.
-            #print(result)
-            return result
-    else:
-        return "-ERROR"
+    try:
+        k = datastore.key
+        return e.get_value(cache.Get(k)) # returns array of datastore and then returns key value.
+    except Exception as ex:
+        return f"-Error: {ex}"
 
 
 def _handle_sync(datastore):

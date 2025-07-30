@@ -1,39 +1,26 @@
 
 from datetime import datetime, timedelta
-from os import WCONTINUED
-
+from timeit import Timer
+from random import randint
 from dateutil.parser import parse
 
 class Expiry:
     def __init__(self, data:dict):
-        self._arr = [data if data["Expiry"] is not None else None]
+        self._data = {}
         self.curr = datetime.now()
+        self.key = next(iter(data))
 
     def radd(self, data):
-        data["type"] = 0 if "type" in data.keys() else None
-        # This ensures the data is retrievable because not expired.
-        self._arr.append(data)
-        return data
+        if hasattr(data, "Expiry"):
+            if getattr(data, "Expiry") is not None or not "":
+                setattr(self._data, self.key, data)
+            return data
 
     def ladd(self, data):
-        temp_arr = []
-        if data == '(already exists)':
+        if hasattr(data, "Expiry"):
+            if getattr(data, "Expiry") is not None or not "":
+                setattr(self._data, self.key, data)
             return data
-        if not isinstance(data["Expiry"], datetime):
-            return data
-        if data["Expiry"]  is not None:
-            data["type"] = 0 if "type" in data.keys() else None
-            # This ensures the data is retrievable because not expired.
-            temp_arr.insert(0, data)
-            for _ in range(len(self._arr)):
-                temp_arr.append(self._arr[_])
-        self._arr = temp_arr
-        return data
-
-    def sort(self):
-        def rExpiry(e):
-            return e.expiry
-        return self._arr.sort(reverse=True, key=rExpiry)
 
     def set_new_expiry(self, key, expiry=0):
         for _ in range(len(self._arr)):
