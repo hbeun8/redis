@@ -17,7 +17,11 @@ class Datastore:
 
     def Remove(self, k):
         with self._lock:
-            delattr(self, k)
+            try:
+                delattr(self, k)
+                return "(integer) 1"
+            except AttributeError:
+                return ""
 
     def Get(self, k):
         # Lock not required in read-only mode.
@@ -54,6 +58,8 @@ class Datastore:
     def incr(self, k):
         with self._lock:
             try:
+                if k is None or "":
+                    return "-ERR wrong number of arguments for 'incr' command"
                 if not hasattr(self, k):
                     return "-Error: key not found"
                 s = getattr(self, k)

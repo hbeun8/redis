@@ -78,3 +78,43 @@ def test_datastore_get_key_not_found():
     c = Datastore(data)
     result = c.Get("Key")
     assert result == "(nil)"
+
+def test_datastore_incr_key_missing():
+    data = {"Name": "Varun", "Expiry": "25/07/25", "Type": 123}
+    c = Datastore(data)
+    result = c.incr(None)
+    assert result == "-ERR wrong number of arguments for 'incr' command"
+
+def test_datastore_incr_key_not_found():
+    data = {"Name": "Varun", "Expiry": "25/07/25", "Type": 123}
+    c = Datastore(data)
+    result = c.incr("NoName")
+    assert result == "-Error: key not found"
+
+
+
+def test_datastore_decr_key_missing():
+    data = {"Name": "Varun", "Expiry": "25/07/25", "Type": 123}
+    c = Datastore(data)
+    result = c.incr(None)
+    assert result == "-ERR wrong number of arguments for 'incr' command"
+
+def test_datastore_decr_key_not_found():
+    data = {"Name": "Varun", "Expiry": "25/07/25", "Type": 123}
+    c = Datastore(data)
+    result = c.decr("NoName")
+    assert result == "-Error: key not found"
+
+def test_datastore_remove_key_not_found():
+    data = {"Name": "Varun", "Expiry": "25/07/25", "Type": 123}
+    c = Datastore(data)
+    result = c.Remove("NoName")
+    assert result == "" # a key is ignored if not found.
+
+# We currently support only single key removal.
+def test_datastore_remove_base_case():
+    data = {"Name": "Varun", "Expiry": "25/07/25", "Type": 123}
+    c = Datastore(data)
+    c.Add("Name", "Varun:25/07/25:123")
+    result = c.Remove("Name")
+    assert result == "(integer) 1"
