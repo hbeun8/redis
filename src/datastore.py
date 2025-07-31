@@ -2,6 +2,8 @@
 from threading import Lock
 from datetime import datetime, timedelta
 from dateutil.parser import parse
+from random import randint
+import asyncio
 
 class Dict:
     def __init__(self, data: dict):
@@ -16,26 +18,56 @@ class Dict:
 class Datastore:
     def __init__(self, data: dict):
         self._lock = Lock()
+        self.keys = list(vars(self).keys())
 
     def Remove(self, k):
         with self._lock:
             try:
                 delattr(self, k)
                 return "(integer) 1"
-            except AttributeError:
-                return ""
+            except AttributeError as e:
+                return f"-Error removing key: {e}"
 
     def Get(self, k):
         # Lock not required in read-only mode.
         try:
             v = getattr(self, k)
-            return v
+            sep = v.find(":")
+            return v[:sep]
         except AttributeError:
             return "(nil)"
 
     def Get_w_Expiry(self, k):
        # if the key is expired
-        return 0
+       try:
+           v = getattr(self, k)
+           if self.isExpired(v):
+               return "+OK"
+           else:
+               return "(nil)"
+       except AttributeError:
+           return "(nil)"
+
+    def isExpired(self, v):
+        sep_1 = v.find(":")+1
+        sep_2 = v[sep_1:].find(":")
+        expiry = v[sep_1:sep_1+sep_2]
+        if isinstance(expiry, (str, int, None)):
+            return True
+        if isinstance(expiry, datetime):
+            return datetime.now() < parse(expiry)
+
+    def run_scan(self, delay=0.1):
+        try:
+            while True:
+                asyncio.sleep(delay)
+                self.scan()
+        except IndexError as e:
+            print("Passive Delete Array", e)
+
+    def scan(self):
+        for key in (self.keys[i] for i in (randint(0, (len(self.keys) - 1)) for k in range(min(20, round(0.25 * len(self.keys)))))):
+            delattr(self, key)
 
     def Exists(self, k):
         with self._lock:
@@ -44,11 +76,28 @@ class Datastore:
             else:
                 return "(integer) 0"
 
+    def set_new_expiry_px_ex(self, k, new_expiry):
+        try:
+            v = getattr(self, k)
+            new_v = self.build_new_v(v, new_expiry)
+            self.Add(k, new_v) # override
+        except AttributeError:
+            return "(nil)"
+
+    def build_new_v(self, v, new_expiry):
+        sep_1 = v.find(":")+1
+        sep_2 = v[sep_1:].find(":")
+        expiry = v[sep_1:sep_1+sep_2]
+        new_expiry = datetime.now() + timedelta(seconds=new_expiry)
+        v.replace(expiry, str(new_expiry))
+        return v
+
     def Add(self, k, v):
         with self._lock:
             try:
                 if hasattr(self, k):
-                    return "(already exists)" # we never reach this!
+                    setattr(self, k, v)
+                    pass #return "(already exists)" # we never reach this!
                 if v is None:
                     return "-ERR wrong number of arguments for 'set' command"
                 if v is not None:
@@ -104,6 +153,15 @@ class Datastore:
             except AttributeError as e:
                 return f"-Err {e}"
 
+    def delete_expired_key(self, k):
+        try:
+            v = getattr(self, k)
+            if self.isExpired(v):
+                # set type = 1 and buld new v
+                delattr(self, k)
+        except AttributeError as e:
+            return f"-Err {e}"
+
     def keys(self):
         return list(self.data)
 
@@ -111,7 +169,7 @@ class Datastore:
         return self._data[key]
 
     def __setitem__(self, key, value):
-        self._data[key] = value
+        self.data[key] = value
 
     def __str__(self):
         return f"Datastore({self.key}  {self.value})"

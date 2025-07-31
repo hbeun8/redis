@@ -53,7 +53,10 @@ def test_execute_ping(execute_ping):
     result = execute_ping
     assert result ==  "PONG"
 
+def test_unrecognized_commands():
+    return ''
 
+test
 @pytest.mark.parametrize(
     "command, datastore,expected",
     [

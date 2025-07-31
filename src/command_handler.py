@@ -44,10 +44,10 @@ def handle_command(command, dictionary, persister=None):
             return _handle_unrecognised_command(command, datastore)
 
 def _handle_del(datastore, persister):
-    # forst check if it already exists
+    # first check if it already exists
     k = datastore.key
-    v = datastore.s
-    if cache.Add(k, v) == "(already exists)":
+    #v = datastore.s
+    if cache.Exists(k) == "(integer) 1":
         cache.Remove(k)
         return "(integer) 1"
     else:
@@ -190,9 +190,6 @@ def _handle_config():
     for element in string:
         components += f"${len(element)}\r\n{element}\r\n"
     return components
-
-def _handle_del(self, datastore, persister):
-    _handle_get(datastore)
 
 def _handle_unrecognised_command(command: str, datastore: list):
     return f"-ERR unknown command {command}, with args beginning with: {' '.join(datastore)} "

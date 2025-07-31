@@ -140,3 +140,47 @@ def test_datastore_exists_missing_key():
     c.Add("Name", "Varun:25/07/25:123")
     result = c.Exists("")
     assert result == "(integer) 0"
+
+def test_datastore_set_w_expiry_base_case_0():
+    data = {"Name": "Varun", "Expiry": "25/07/25", "Type": 123}
+    c = Datastore(data)
+    c.Add("Name", "Varun:25/07/25:123")
+    result = c.Get_w_Expiry("Name")
+    assert result == "(nil)"
+
+def test_datastore_set_w_expiry_base_case_1():
+    data = {"Name": "Varun", "Expiry": "25/07/26", "Type": 123}
+    c = Datastore(data)
+    c.Add("Name", "Varun:25/07/26:123")
+    result = c.Get_w_Expiry("Name")
+    assert result == "+OK"
+
+def test_datastore_set_w_expiry_missing():
+    data = {"Name": "Varun", "Expiry": "25/07/26", "Type": 123}
+    c = Datastore(data)
+    c.Add("Name", "Varun:None:123")
+    result = c.Get_w_Expiry("Name")
+    assert result == "+OK"
+
+def test_datastore_set_w_expiry_gibberish():
+    data = {"Name": "Varun", "Expiry": "25/07/26", "Type": 123}
+    c = Datastore(data)
+    c.Add("Name", "Varun:Apple:123")
+    result = c.Get_w_Expiry("Name")
+    assert result == "+OK"
+
+def test_datastore_set_w_expiry_gibberish_fail():
+    data = {"Name": "Varun", "Expiry": "25/07/26", "Type": 123}
+    c = Datastore(data)
+    c.Add("Name", "Varun:Apple:123")
+    result = c.Get_w_Expiry("NoName")
+    assert result == "(nil)"
+
+def test_datastore_set_new_expiry_seconds():
+    data = {"Name": "Varun", "Expiry": "25/07/26", "Type": 123}
+    c = Datastore(data)
+    c.Add("Name", "Varun:25/07/26:123")
+    result = c.set_new_expiry_px_ex("Name", 60)
+    value = c.Get("Name")
+    assert result == "+OK"
+    assert value == 60
