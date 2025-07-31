@@ -1,6 +1,7 @@
 
 from threading import Lock
 from datetime import datetime, timedelta
+import time
 from dateutil.parser import parse
 from random import randint
 import asyncio
@@ -9,16 +10,24 @@ class Dict:
     def __init__(self, data: dict):
         self.key = next(iter(data))
         self.value = data[self.key]
-        self.expiry = data["Expiry"] if "Expiry" in data else None
+        self.expiry_name = list(data.keys())[1]
+        if self.expiry_name.upper() == 'PX':
+            self.expiry = time.time_ns() + int(float(data[self.expiry_name])) * 1e+6
+        elif self.expiry_name.upper() == 'EX':
+            self.expiry = time.time_ns() + int(float(data[self.expiry_name])) * 1e+9
+        else:
+            self.expiry = None
         self.type = data["type"] if "type" in data else None
         self.s = f"{self.value}:{self.expiry}:{self.type}"
         self.u_s = data
         self.curr = datetime.now()
+        self.keys = data.keys()
 
 class Datastore:
     def __init__(self, data: dict):
         self._lock = Lock()
         self.keys = list(vars(self).keys())
+
 
     def Remove(self, k):
         with self._lock:
@@ -28,7 +37,7 @@ class Datastore:
             except AttributeError as e:
                 return f"-Error removing key: {e}"
 
-    def Get(self, k):
+    def Get_wo_expiry(self, k):
         # Lock not required in read-only mode.
         try:
             v = getattr(self, k)
@@ -37,33 +46,37 @@ class Datastore:
         except AttributeError:
             return "(nil)"
 
-    def Get_w_Expiry(self, k):
+    def Get(self, k):
        # if the key is expired
        try:
            v = getattr(self, k)
            if self.isExpired(v):
-               return "+OK"
-           else:
+               delattr(self, k)
                return "(nil)"
-       except AttributeError:
-           return "(nil)"
+           else:
+               sep = v.find(":")
+               return v[:sep]
+       except AttributeError as e:
+           return f"-Err: {e}"
 
     def isExpired(self, v):
-        sep_1 = v.find(":")+1
-        sep_2 = v[sep_1:].find(":")
-        expiry = v[sep_1:sep_1+sep_2]
-        if isinstance(expiry, (str, int, None)):
-            return True
-        if isinstance(expiry, datetime):
-            return datetime.now() < parse(expiry)
-
+        try:
+            sep_1 = v.find(":")+1
+            sep_2 = v[sep_1:].find(":")
+            expiry = v[sep_1:sep_1+sep_2]
+            if expiry == 'None':
+                return False
+            if isinstance(expiry, (str, int, float)):
+                return time.time_ns() > int(float(expiry))
+        except Exception as e:
+            return f"isExpired: {e}"
     def run_scan(self, delay=0.1):
         try:
             while True:
                 asyncio.sleep(delay)
                 self.scan()
         except IndexError as e:
-            print("Passive Delete Array", e)
+            print("Passive Delete Expired Keys:", e)
 
     def scan(self):
         for key in (self.keys[i] for i in (randint(0, (len(self.keys) - 1)) for k in range(min(20, round(0.25 * len(self.keys)))))):
@@ -76,21 +89,72 @@ class Datastore:
             else:
                 return "(integer) 0"
 
-    def set_new_expiry_px_ex(self, k, new_expiry):
+    def set_new_expiry_ex(self, k, new_expiry):
         try:
             v = getattr(self, k)
-            new_v = self.build_new_v(v, new_expiry)
+            new_v = self.build_new_v_ex(v, new_expiry)
             self.Add(k, new_v) # override
         except AttributeError:
             return "(nil)"
 
-    def build_new_v(self, v, new_expiry):
+    def set_new_expiry_px(self, k, new_expiry):
+        try:
+            v = getattr(self, k)
+            new_v = self.build_new_v_px(v, new_expiry)
+            self.Add(k, new_v) # override
+        except AttributeError:
+            return "(nil)"
+
+    def build_new_v_ex(self, v, new_expiry):
         sep_1 = v.find(":")+1
         sep_2 = v[sep_1:].find(":")
         expiry = v[sep_1:sep_1+sep_2]
-        new_expiry = datetime.now() + timedelta(seconds=new_expiry)
-        v.replace(expiry, str(new_expiry))
+        new_expiry_s = time.time_ns() + new_expiry*1e+9 # if seconds
+        v.replace(expiry, str(new_expiry_s))
         return v
+
+    def build_new_v_px(self, v, new_expiry):
+        sep_1 = v.find(":")+1
+        sep_2 = v[sep_1:].find(":")
+        expiry = v[sep_1:sep_1+sep_2]
+        new_expiry_mils = time.time_ns() + new_expiry * 1e+6 # if milliseconds
+        new_expiry_mics = time.time_ns() + new_expiry * 1000 # if microseconds
+        v.replace(expiry, str(new_expiry_mils))
+        return v
+
+    def AddEX(self, k, v):
+        with self._lock:
+            try:
+                if hasattr(self, k):
+                    v = self.Get(k)
+                    expiry_nano = self.set_new_expiry_ex(k, v) # takes v which has expiry in seconds and sets
+                    setattr(self, k, v)
+                    pass #return "(already exists)" # we never reach this!
+                if v is None:
+                    return "-ERR wrong number of arguments for 'set' command"
+                if v is not None:
+                    setattr(self, k, v)
+                    return "+OK"
+                if v == "None:None:None" or v == "" or k == "" or k is None:
+                    return "-ERR wrong number of arguments for 'set' command"
+            except Exception as e:
+                return f"-ERR {e}"
+
+    def AddPX(self, k, v):
+        with self._lock:
+            try:
+                if hasattr(self, k):
+                    setattr(self, k, v)
+                    pass #return "(already exists)" # we never reach this!
+                if v is None:
+                    return "-ERR wrong number of arguments for 'set' command"
+                if v is not None:
+                    setattr(self, k, v)
+                    return "+OK"
+                if v == "None:None:None" or v == "" or k == "" or k is None:
+                    return "-ERR wrong number of arguments for 'set' command"
+            except Exception as e:
+                return f"-ERR {e}"
 
     def Add(self, k, v):
         with self._lock:
@@ -100,7 +164,7 @@ class Datastore:
                     pass #return "(already exists)" # we never reach this!
                 if v is None:
                     return "-ERR wrong number of arguments for 'set' command"
-                if v is not None:
+                if v is not None: # catchall
                     setattr(self, k, v)
                     return "+OK"
                 if v == "None:None:None" or v == "" or k == "" or k is None:
@@ -134,7 +198,7 @@ class Datastore:
                     return f"(integer) {new_v}"
                 return "-Error: Key not int"
             except (AttributeError, ValueError, IndexError) as e:
-                return f"-Err {e}"
+                return f"(error) ERR value is not an integer or out of range"
 
     def decr(self, k):
         with self._lock:

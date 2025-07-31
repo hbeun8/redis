@@ -8,67 +8,66 @@ class ConnectionHandler:
 
     def handle_execute(self):
         while True:
-            data = self.conn.recv(4096)
-            if not data:  # <-- peer hung up
-                break
-            parser = Parser(data)
-            frames, _ = parser.parse_frame(data)
-            cmd = frames[0].data.upper()
-            if cmd == 'COMMAND':  #
-                self.conn.send(b"+OK'\r\n")
-                continue  # stay connected
-            if cmd == 'PING':
-                self.conn.send(b"+PONG\r\n")
-                continue
+                data = self.conn.recv(4096)
+                if not data:  # <-- peer hung up
+                    break
+                parser = Parser(data)
+                frames, _ = parser.parse_frame(data)
+                cmd = frames[0].data.upper()
+                if cmd == 'COMMAND':  #
+                    self.conn.send(b"+OK'\r\n")
+                    continue  # stay connected
+                if cmd == 'PING':
+                    self.conn.send(b"+PONG\r\n")
+                    continue
 
-            if cmd == 'ECHO':
-                if len(frames) == 2:
-                    ds = frames[1].data
-                    _echo_data = self.resp_serialized(ds)
-                    self.conn.send(_echo_data.encode())
-                    continue
-                elif len(frames) > 2:
-                    ds=b'-Err\r\n'
-                    self.conn.send(ds)
-                    continue
-                else:
-                    ds=b'-Err\r\n'
-                    self.conn.send(ds)
-                    continue
-            # default option
-            option = 'vanilla'
-            datastore =  {} # proxy for now
-
-            if cmd == 'GET':
-                kwarg_key = self.isvalid(frames, 1, "None"),
-                if option == "vanilla":
-                    datastore = {kwarg_key[0]: "TO BE FOUND", "Expiry": "TO BE FOUND"}
-            else:
-                if len(frames) == 2:
-                    if cmd == "SET":
-                        self.conn.send(self.resp_serialized("Err").encode())
+                if cmd == 'ECHO':
+                    if len(frames) == 2:
+                        ds = frames[1].data
+                        _echo_data = self.resp_serialized(ds)
+                        self.conn.send(_echo_data.encode())
                         continue
-                    datastore = {getattr(frames[1], "data"): "NONE", "Expiry": "NONE"}
-                elif len(frames) > 2 :
-                    if cmd == "LRANGE":
-                        kwarg_arr = self.isvalid(frames, 1, "None"),
-                        kwarg_arr_list = self.isvalid(frames, 2, "None"),
-                        kwarg_arr_start = self.isvalid(frames, 3, "None"),
-                        kwarg_arr_end = self.isvalid(frames, 4, "None")
-                        datastore = {kwarg_arr[0]: kwarg_arr_start[0], "end": kwarg_arr_end[0]}
+                    elif len(frames) > 2:
+                        ds=b'-Err\r\n'
+                        self.conn.send(ds)
+                        continue
                     else:
-                        kwarg_key = self.isvalid(frames, 1, "None"),
-                        kwarg_value = self.isvalid(frames, 2, "None"),
-                        kwarg_ex_px = self.isvalid(frames, 3, "Expiry"),
-                        kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
-                        datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
-
-            result = command_handler.handle_command(cmd, datastore)
-            output = self.resp_serialized(str(result))  # Consider appending any error message here
-            if output:
-                self.conn.send(output.encode())
-            else:
-                self.conn.send(b'\n')
+                        ds=b'-Err\r\n'
+                        self.conn.send(ds)
+                        continue
+                # default option
+                option = 'vanilla'
+                datastore =  {} # proxy for now
+                # edge cases
+                if cmd == 'GET':
+                    kwarg_key = self.isvalid(frames, 1, "None"),
+                    if option == "vanilla":
+                        datastore = {kwarg_key[0]: "TO BE FOUND", "Expiry": "TO BE FOUND"}
+                else:
+                    if len(frames) == 2:
+                        if cmd == "SET":
+                            self.conn.send(self.resp_serialized("Err").encode())
+                            continue
+                        datastore = {getattr(frames[1], "data"): "NONE", "Expiry": "NONE"}
+                    elif len(frames) > 2 :
+                        if cmd == "LRANGE":
+                            kwarg_arr = self.isvalid(frames, 1, "None"),
+                            kwarg_arr_list = self.isvalid(frames, 2, "None"),
+                            kwarg_arr_start = self.isvalid(frames, 3, "None"),
+                            kwarg_arr_end = self.isvalid(frames, 4, "None")
+                            datastore = {kwarg_arr[0]: kwarg_arr_start[0], "end": kwarg_arr_end[0]}
+                        else:
+                            kwarg_key = self.isvalid(frames, 1, "None"),
+                            kwarg_value = self.isvalid(frames, 2, "None"),
+                            kwarg_ex_px = self.isvalid(frames, 3, "Expiry"),
+                            kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
+                            datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
+                result = command_handler.handle_command(cmd, datastore)
+                output = self.resp_serialized(str(result))  # Consider appending any error message here
+                if output:
+                    self.conn.send(output.encode())
+                else:
+                    self.conn.send(b'\n')
 
     def isvalid(self, data:list, index: int, safe: str):
         try:

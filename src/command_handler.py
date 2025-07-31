@@ -34,6 +34,13 @@ def handle_command(command, dictionary, persister=None):
         case "RPUSH":
             return _handle_rpush(command, datastore, persister)
         case "SET":
+            '''
+            exp = datastore.expiry_name
+            if exp == "PX" or exp == "px":
+                return _handle_set_px(datastore, persister)
+            if exp == "EX" or exp == "ex":
+                return _handle_set_ex(datastore, persister)
+            '''
             return _handle_set(datastore, persister)
         case "GET":
             return _handle_get(datastore)
@@ -41,7 +48,7 @@ def handle_command(command, dictionary, persister=None):
         case "SYNC":
             return _handle_sync(datastore)
         case _:
-            return _handle_unrecognised_command(command, datastore)
+            return _handle_unrecognised_command(command)
 
 def _handle_del(datastore, persister):
     # first check if it already exists
@@ -198,10 +205,29 @@ def _handle_set(datastore, persister):
     try:
         k = datastore.key
         v = datastore.s
-        e.ladd(cache.Add(k, v)) # cache.add and e.ladd returns array of datastore
+        cache.Add(k, v) # cache.add and e.ladd returns array of datastore
         return 'OK'
     except Exception as ex:
         return f"-Error: {ex}"
+
+def _handle_set_ex(datastore, persister):
+    try:
+        k = datastore.key
+        v = datastore.s
+        cache.AddEX(k, v) # cache.add and e.ladd returns array of datastore
+        return 'OK'
+    except Exception as ex:
+        return f"-Error: {ex}"
+
+def _handle_set_px(datastore, persister):
+    try:
+        k = datastore.key
+        v = datastore.s
+        cache.AddPX(k, v) # cache.add and e.ladd returns array of datastore
+        return 'OK'
+    except Exception as ex:
+        return f"-Error: {ex}"
+
 
 def _handle_get(datastore):
     try:
