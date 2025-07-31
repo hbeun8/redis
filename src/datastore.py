@@ -73,7 +73,7 @@ class Datastore:
     def run_scan(self, delay=0.1):
         try:
             while True:
-                asyncio.sleep(delay)
+                time.sleep(delay)
                 self.scan()
         except IndexError as e:
             print("Passive Delete Expired Keys:", e)
@@ -237,3 +237,4 @@ class Datastore:
 
     def __str__(self):
         return f"Datastore({self.key}  {self.value})"
+

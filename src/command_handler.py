@@ -3,11 +3,22 @@ from typing_extensions import dataclass_transform
 from datastore import Datastore, Dict
 from expiry import Expiry
 from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplestring
+import threading
+import asyncio
+
+def start_async_loop_in_thread(cache):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.create_task(asyncio.to_thread(cache.run_scan))
+    loop.run_forever()
 
 'create an instance of Datastore and Expiry. They have to be not None'
 cache = Datastore({"key": "value", "Expiry": "value"})
 e = Expiry({"key": "value", "Expiry": "value"})
 
+#***
+threading.Thread(target=start_async_loop_in_thread, args=(cache,), daemon=True).start()
+#***
 def handle_command(command, dictionary, persister=None):
 
     datastore = Dict(dictionary)
