@@ -17,7 +17,7 @@ cache = Datastore({"key": "value", "Expiry": "value"})
 e = Expiry({"key": "value", "Expiry": "value"})
 
 #***
-threading.Thread(target=start_async_loop_in_thread, args=(cache,), daemon=True).start()
+#threading.Thread(target=start_async_loop_in_thread, args=(cache,), daemon=True).start()
 #***
 def handle_command(command, dictionary, persister=None):
 
