@@ -176,6 +176,15 @@ def test_datastore_set_w_expiry_gibberish_fail():
     result = c.Get_w_Expiry("NoName")
     assert result == "(nil)"
 
+def test_datastore_incr_invalid_literal():
+    data = {"Name": "Varun", "Expiry": "25/07/26", "Type": 123}
+    c = Datastore(data)
+    c.Add("k", "[1, 2, 3]:25/07/26:123")
+    result = c.incr("k")
+    assert result == "-Err invalid literal for int() with base 10: '[1,2,3]"
+
+
+
 def test_datastore_set_new_expiry_seconds():
     data = {"Name": "Varun", "Expiry": "25/07/26", "Type": 123}
     c = Datastore(data)

@@ -133,7 +133,7 @@ class Datastore:
                     setattr(self, k, new_s)
                     return f"(integer) {new_v}"
                 return "-Error: Key not int"
-            except AttributeError as e:
+            except (AttributeError, ValueError, IndexError) as e:
                 return f"-Err {e}"
 
     def decr(self, k):

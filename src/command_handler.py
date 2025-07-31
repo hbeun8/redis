@@ -191,8 +191,8 @@ def _handle_config():
         components += f"${len(element)}\r\n{element}\r\n"
     return components
 
-def _handle_unrecognised_command(command: str, datastore: list):
-    return f"-ERR unknown command {command}, with args beginning with: {' '.join(datastore)} "
+def _handle_unrecognised_command(command: str):
+    return f"-ERR unknown command {command}"
 
 def _handle_set(datastore, persister):
     try:
