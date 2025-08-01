@@ -26,7 +26,7 @@ class Dict:
 class Datastore:
     def __init__(self, data: dict):
         self._lock = Lock()
-        self.keys = list(vars(self).keys())
+        self.keys = list(vars(self).keys()) # or just use list(dir(self))
 
     def Remove(self, k):
         with self._lock:

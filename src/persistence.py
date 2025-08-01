@@ -20,7 +20,7 @@ class AppendOnlyPersister:
         self._filename = filename
         self._file = open(filename, mode='ab', buffering=0)
 
-    def log_command(self, command, data):
+    def log_command(self, command="", data):
         # Write the length of the command followed by the encoded command items
         self._file.write(f"{len(command)}\n".encode())
         for item in data:

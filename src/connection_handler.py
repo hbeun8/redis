@@ -12,6 +12,7 @@ class ConnectionHandler:
     def handle_execute(self):
         while True:
                 data = self.conn.recv(4096)
+                persister.log_command("", data)
                 if not data:  # <-- peer hung up
                     break
                 parser = Parser(data)
@@ -37,7 +38,7 @@ class ConnectionHandler:
                             kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
                             datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
                             result = command_handler.handle_command(cmd, datastore)
-                            output = self.resp_serialized(str(result))  # Consider appending any error message here
+                            output = self.resp_serialized(str(result))  # Consider appending any error message her
                             if output:
                                 self.conn.send(output.encode())
                             else:
@@ -96,6 +97,7 @@ class ConnectionHandler:
                 result = command_handler.handle_command(cmd, datastore, persister)
                 output = self.resp_serialized(str(result))  # Consider appending any error message here
                 if output:
+                    persister.log_command(cmd, output.encode())
                     self.conn.send(output.encode())
                 else:
                     self.conn.send(b'\n')

@@ -56,7 +56,6 @@ def handle_command(command, datastore, persister=None):
 
 def _handle_del(command, datastore, persister):
     # first check if it already exists
-    persister.log_command(command, datastore)
     k = datastore.key
     #v = datastore.s
     if cache.Exists(k) == "(integer) 1":
@@ -66,20 +65,17 @@ def _handle_del(command, datastore, persister):
         return "(integer) 0"
 
 def _handle_incr(command, datastore, persister):
-    persister.log_command(command, datastore)
     k = datastore.key
     v = datastore.s
     return cache.incr(k)
 
 def _handle_decr(command, datastore, persister):
-    persister.log_command(command, datastore)
     k = datastore.key
     v = datastore.s
     return cache.decr(k)
 
 def _handle_exists(command, datastore, persister):
     try:
-        persister.log_command(command, datastore)
         k = datastore.key
         if k == "" or k is None:
             return "-Err wrong number of arguments for 'exists' command"
@@ -89,7 +85,6 @@ def _handle_exists(command, datastore, persister):
 
 def _handle_lrange(command, datastore, persister):
     #datastore {arr: start, 'end': end}
-    persister.log_command(command, datastore)
     k = datastore.key
     v = datastore.s
     try:
@@ -138,7 +133,6 @@ def _handle_ping(command, datastore, persister):
 
 def _handle_lpush(command, datastore, persister):
     # {arr: values, expiry: none, type: none}
-    persister.log_command(command, datastore)
     if _handle_exists(datastore) == "(integer) 1":
         arr = _handle_get(datastore)
         ds_key = datastore.key
@@ -165,7 +159,6 @@ def _handle_lpush(command, datastore, persister):
 
 def _handle_rpush(command, datastore, persister):
     # {arr: values, expiry: none, type: none}
-    persister.log_command(command, datastore)
     if _handle_exists(datastore):
         arr = list(_handle_get(datastore))
         ds_key = datastore.key
@@ -192,7 +185,6 @@ def _handle_rpush(command, datastore, persister):
             return "-Error"
 
 def _handle_config(command, datastore, persister):
-    persister.log_command(command, datastore)
     string = ["List of supported commands:",
               "COMMAND: ",
               "CONFIG ",
@@ -213,12 +205,10 @@ def _handle_config(command, datastore, persister):
     return components
 
 def _handle_unrecognised_command(command, datastore, persister):
-    persister.log_command(command, datastore)
     return f"-ERR unknown command {command}"
 
 def _handle_set(command, datastore, persister):
     try:
-        persister.log_command(command, datastore)
         k = datastore.key
         v = datastore.s
         cache.Add(k, v) # cache.add and e.ladd returns array of datastore
@@ -228,7 +218,6 @@ def _handle_set(command, datastore, persister):
 
 def _handle_set_ex(command, datastore, persister):
     try:
-        persister.log_command(command, datastore)
         k = datastore.key
         v = datastore.s
         cache.AddEX(k, v) # cache.add and e.ladd returns array of datastore
@@ -238,7 +227,6 @@ def _handle_set_ex(command, datastore, persister):
 
 def _handle_set_px(command, datastore, persister):
     try:
-        persister.log_command(command, datastore)
         k = datastore.key
         v = datastore.s
         cache.AddPX(k, v) # cache.add and e.ladd returns array of datastore
@@ -249,15 +237,15 @@ def _handle_set_px(command, datastore, persister):
 
 def _handle_get(command, datastore, persister):
     try:
-        persister.log_command(command, datastore)
         k = datastore.key
+        if cache.Get(k) =="(nil)"
+            persister.log_command(command, resp_encoder_get("nil")) # synthesize delete for persister in case of expired keys
         return cache.Get(k) # returns array of datastore and then returns key value.
     except Exception as ex:
         return f"-Error: {ex}"
 
 
 def _handle_sync(command, datastore, persister):
-    persister.log_command(command, datastore)
     if datastore:
         for key in datastore.keys():
             result = cache.Get(datastore) # returns array of datastore
