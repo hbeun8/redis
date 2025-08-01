@@ -33,19 +33,21 @@ class AppendOnlyPersister:
             _comp = f"${len(data)}\r\n{data}\r\n"
             return _comp
 
-    # Find first and last consecutive commands and replace items and delete those items
-    '''
-    def shortest_path(self):
+    # Returns first and last consecutive keys (and maybe appends set keys) and removes everything in the middle and save in flattened.aof
+    # After running this command, it runs the check the command.
+    def flatten(self):
         with self._file as f:
             for buffer in f:
-                #for command_and_datastore in framed(buffer):
-                    #append_to_array_{command_datastore}
-                    #this appends to the array -> returns_last command_and_datastore_identify_grouped_commands(command, datastore)# this is a buffer
-                    #for each ele in data
-                        store sdata in a temp array
-                            if the next data is same as above, store in temp array
-                                else ignore
-                        return first and last elements of array [0. -1]
+                frames, frame_size = parser.parse_frame(buffer)
+                key, value = frames[1], frames[2]
+                keys_to_be_deleted = [buffer[i + 1] for i in range(len(b) - 2) if
+                                          b[i][0] == b[i + 1][0] and b[i][0] == b[i + 2][0]]
+                    # print(keys_to_be_deleted)
+                    for key in keys_to_be_deleted:
+                        b.remove(key)
+                    return b
+                except Exception as e:
+                    return e
         # build new_logs.
         for each command and datastroe in array:
             self.log_command(command, data)
@@ -54,19 +56,21 @@ class AppendOnlyPersister:
         with self.file in f:
             for buffer in f:
                 generate a dictionary that will groupby file into command and key to fin_value
-    '''
 
-    def safe_log_rewrite_atomic_build(self, repl_filename):
-        # log rewriting:
-        # log rewriting is completely safe:
+
+    def log_rebuild(self, repl_filename):
         repl = open(repl_filename, mode='ab', buffering=0)
         with self._file as f:
             for line in f:
                 repl.write(line)
 
-    def rebuild_aof(self, repl_filename):
-        thread = threading.Thread(target=self.safe_log_rewrite_atomic_build, args=(repl_filename), daemon=True)
-        thread.start()
+    def safe_flatten(self):
+        t = threading.Thread(target=self.flatten, args=(), daemon=True)
+        t.start()
+
+    def safe_log_rebuild(self, repl_filename):
+        t = threading.Thread(target=self.safe_log_rebuild, args=(repl_filename), daemon=True)
+        t.start()
 
 
 def restore_from_file(filename, datastore):
@@ -79,13 +83,4 @@ def restore_from_file(filename, datastore):
                 break
             buffer.extend(data)
     return buffer
-
-
-'''
-def create_task()????????
-'''
-
-'''
-loop over create server
-'''
 

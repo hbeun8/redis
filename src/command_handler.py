@@ -15,29 +15,26 @@ scan = threading.Thread(target=cache.run_scan, args=(), daemon=True)
 scan.start()
 #***
 
-
-def handle_command(command, dictionary, persister=None):
-
-    datastore = Dict(dictionary)
+def handle_command(command, datastore, persister=None):
     match command:
         case "CONFIG":
-            return _handle_config()
+            return _handle_config(command, datastore, persister)
         case "DECR":
-            return _handle_decr(datastore, persister)
+            return _handle_decr(command, datastore, persister)
         case "DEL":
-            return _handle_del(datastore, persister)
+            return _handle_del(command, datastore, persister)
         case "ECHO":
             return "" # handled in the connection_handler as part of redis min connection requirements.
         case "EXISTS":
-            return _handle_exists(datastore)
+            return _handle_exists(command, datastore, persister)
         case "INCR":
-            return _handle_incr(datastore, persister)
+            return _handle_incr(command, datastore, persister)
         case "LPUSH":
-            return _handle_lpush(datastore, persister)
+            return _handle_lpush(command, datastore, persister)
         case "LRANGE":
-            return _handle_lrange(command, datastore)
+            return _handle_lrange(command, datastore, persister)
         case "PING":
-            return _handle_ping(datastore)
+            return _handle_ping(command, datastore, persister)
         case "RPUSH":
             return _handle_rpush(command, datastore, persister)
         case "SET":
@@ -48,17 +45,18 @@ def handle_command(command, dictionary, persister=None):
             if exp == "EX" or exp == "ex":
                 return _handle_set_ex(datastore, persister)
             '''
-            return _handle_set(datastore, persister)
+            return _handle_set(command, datastore, persister)
         case "GET":
-            return _handle_get(datastore)
+            return _handle_get(command, datastore, persister)
         # for replication
         case "SYNC":
-            return _handle_sync(datastore)
+            return _handle_sync(command, datastore, persister)
         case _:
-            return _handle_unrecognised_command(command)
+            return _handle_unrecognised_command(command, datastore, persister)
 
-def _handle_del(datastore, persister):
+def _handle_del(command, datastore, persister):
     # first check if it already exists
+    persister.log_command(command, datastore)
     k = datastore.key
     #v = datastore.s
     if cache.Exists(k) == "(integer) 1":
@@ -67,18 +65,21 @@ def _handle_del(datastore, persister):
     else:
         return "(integer) 0"
 
-def _handle_incr(datastore, persister):
+def _handle_incr(command, datastore, persister):
+    persister.log_command(command, datastore)
     k = datastore.key
     v = datastore.s
     return cache.incr(k)
 
-def _handle_decr(datastore, persister):
+def _handle_decr(command, datastore, persister):
+    persister.log_command(command, datastore)
     k = datastore.key
     v = datastore.s
     return cache.decr(k)
 
-def _handle_exists(datastore):
+def _handle_exists(command, datastore, persister):
     try:
+        persister.log_command(command, datastore)
         k = datastore.key
         if k == "" or k is None:
             return "-Err wrong number of arguments for 'exists' command"
@@ -86,8 +87,9 @@ def _handle_exists(datastore):
     except Exception as e:
         return "-Err wrong number of arguments for 'exists' command"
 
-def _handle_lrange(datastore):
+def _handle_lrange(command, datastore, persister):
     #datastore {arr: start, 'end': end}
+    persister.log_command(command, datastore)
     k = datastore.key
     v = datastore.s
     try:
@@ -127,15 +129,16 @@ def resp_encoder_get(data):
         return ""
     return f"*1\r\n${len(data)}\r\n{data}\r\n"
 
-def _handle_ping(datastore):
+def _handle_ping(command, datastore, persister):
     try:
         return "PONG"
 
     except Exception as e:
         return f"-ERROR {str(e)}\r\n"
 
-def _handle_lpush(datastore, persister):
+def _handle_lpush(command, datastore, persister):
     # {arr: values, expiry: none, type: none}
+    persister.log_command(command, datastore)
     if _handle_exists(datastore) == "(integer) 1":
         arr = _handle_get(datastore)
         ds_key = datastore.key
@@ -160,8 +163,9 @@ def _handle_lpush(datastore, persister):
         else:
             return "-Error"
 
-def _handle_rpush(datastore, persister):
+def _handle_rpush(command, datastore, persister):
     # {arr: values, expiry: none, type: none}
+    persister.log_command(command, datastore)
     if _handle_exists(datastore):
         arr = list(_handle_get(datastore))
         ds_key = datastore.key
@@ -187,7 +191,8 @@ def _handle_rpush(datastore, persister):
         else:
             return "-Error"
 
-def _handle_config():
+def _handle_config(command, datastore, persister):
+    persister.log_command(command, datastore)
     string = ["List of supported commands:",
               "COMMAND: ",
               "CONFIG ",
@@ -207,11 +212,13 @@ def _handle_config():
         components += f"${len(element)}\r\n{element}\r\n"
     return components
 
-def _handle_unrecognised_command(command: str):
+def _handle_unrecognised_command(command, datastore, persister):
+    persister.log_command(command, datastore)
     return f"-ERR unknown command {command}"
 
-def _handle_set(datastore, persister):
+def _handle_set(command, datastore, persister):
     try:
+        persister.log_command(command, datastore)
         k = datastore.key
         v = datastore.s
         cache.Add(k, v) # cache.add and e.ladd returns array of datastore
@@ -219,8 +226,9 @@ def _handle_set(datastore, persister):
     except Exception as ex:
         return f"-Error: {ex}"
 
-def _handle_set_ex(datastore, persister):
+def _handle_set_ex(command, datastore, persister):
     try:
+        persister.log_command(command, datastore)
         k = datastore.key
         v = datastore.s
         cache.AddEX(k, v) # cache.add and e.ladd returns array of datastore
@@ -228,8 +236,9 @@ def _handle_set_ex(datastore, persister):
     except Exception as ex:
         return f"-Error: {ex}"
 
-def _handle_set_px(datastore, persister):
+def _handle_set_px(command, datastore, persister):
     try:
+        persister.log_command(command, datastore)
         k = datastore.key
         v = datastore.s
         cache.AddPX(k, v) # cache.add and e.ladd returns array of datastore
@@ -238,15 +247,17 @@ def _handle_set_px(datastore, persister):
         return f"-Error: {ex}"
 
 
-def _handle_get(datastore):
+def _handle_get(command, datastore, persister):
     try:
+        persister.log_command(command, datastore)
         k = datastore.key
         return cache.Get(k) # returns array of datastore and then returns key value.
     except Exception as ex:
         return f"-Error: {ex}"
 
 
-def _handle_sync(datastore):
+def _handle_sync(command, datastore, persister):
+    persister.log_command(command, datastore)
     if datastore:
         for key in datastore.keys():
             result = cache.Get(datastore) # returns array of datastore

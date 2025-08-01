@@ -1,7 +1,9 @@
 
 from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplestring
 import command_handler
-from persistence import restore_from_file
+from persistence import restore_from_file, AppendOnlyPersister
+import time
+persister = AppendOnlyPersister("log.aof")
 
 class ConnectionHandler:
     def __init__(self, conn):
@@ -42,6 +44,13 @@ class ConnectionHandler:
                                 self.conn.send(b'\n')
                     except Exception as e:
                         return f"-Err (persister): {e}"
+                if cmd == "BGREWRITEAOF":
+                    try:
+                        persister.safe_log_rebuild("replica_log.aof")
+                        persister.sefe_flatten()
+                        persister.check(f"{time.time_ns}.aof")
+                    except Exception as e:
+                        return f"-Err (BGREWRITEAOF already in progress): {e}"
                 if cmd == 'ECHO':
                     if len(frames) == 2:
                         ds = frames[1].data
@@ -84,12 +93,13 @@ class ConnectionHandler:
                             kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
                             datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
 
-                result = command_handler.handle_command(cmd, datastore)
+                result = command_handler.handle_command(cmd, datastore, persister)
                 output = self.resp_serialized(str(result))  # Consider appending any error message here
                 if output:
                     self.conn.send(output.encode())
                 else:
                     self.conn.send(b'\n')
+
 
     def isvalid(self, data:list, index: int, safe: str):
         try:
