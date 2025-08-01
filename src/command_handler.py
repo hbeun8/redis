@@ -46,9 +46,6 @@ def handle_command(command, datastore, persister=None):
             if exp == "EX" or exp == "ex":
                 return _handle_set_ex(datastore, persister)
             '''
-            print(command)
-            print(datastore)
-            print(persister)
             return _handle_set(command, datastore, persister)
         case "GET":
             return _handle_get(command, datastore, persister)
