@@ -2,9 +2,8 @@
 from threading import Lock
 from datetime import datetime, timedelta
 import time
-from dateutil.parser import parse
 from random import randint
-import asyncio
+
 
 class Dict:
     def __init__(self, data: dict):

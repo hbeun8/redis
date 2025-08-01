@@ -134,6 +134,6 @@ GET: 5263.43 requests per second, p50=7.023 msec
       GET: 24125.45 requests per second, p50=1.487 msec
 
 _*using cache friendly datastructures_
-## BENCHMARK (P.I.T):
+## Benchmark (P.I.T):
 SET: 71684.59 requests per second, p50=0.543 msec                   
 GET: 73475.39 requests per second, p50=0.543 msec
