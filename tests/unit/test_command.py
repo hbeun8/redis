@@ -1,7 +1,7 @@
 import pytest
 from time import sleep, time_ns
 from protocol_handler import Bulkstring, Array, Error, Integer, Simplestring
-from command_handler import handle_command
+from command_handler import handle_command, _handle_unrecognised_command
 from connection_handler import ConnectionHandler as c
 from datastore import Datastore
 import datetime
@@ -53,10 +53,13 @@ def test_execute_ping(execute_ping):
     result = execute_ping
     assert result ==  "PONG"
 
-def test_unrecognized_commands():
-    return ''
+def test_handle_unrecognized_commands():
+    cmd = "sek"
+    result = _handle_unrecognised_command(cmd)
+    assert result == "-ERR unknown command sek"
 
-test
+
+
 @pytest.mark.parametrize(
     "command, datastore,expected",
     [

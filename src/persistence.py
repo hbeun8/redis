@@ -1,7 +1,7 @@
 '''
 We have two options for persistence:
     1. snapshotting
-    2. append-only file (fn) -> opens the file and logs the command to the file..
+    2. append-only file (fn) -> opens the file and logs the command to the file.
 
 AOF persistence logs every write operation received by the server.
 These operations can then be replayed again at server startup,
@@ -13,7 +13,6 @@ Consider fsync policy to speed it up.
 '''
 
 from protocol_handler import Parser
-from command_handler import handle_command
 import threading
 
 class AppendOnlyPersister:
@@ -35,6 +34,7 @@ class AppendOnlyPersister:
             return _comp
 
     # Find first and last consecutive commands and replace items and delete those items
+    '''
     def shortest_path(self):
         with self._file as f:
             for buffer in f:
@@ -54,6 +54,7 @@ class AppendOnlyPersister:
         with self.file in f:
             for buffer in f:
                 generate a dictionary that will groupby file into command and key to fin_value
+    '''
 
     def safe_log_rewrite_atomic_build(self, repl_filename):
         # log rewriting:
@@ -70,44 +71,15 @@ class AppendOnlyPersister:
 
 def restore_from_file(filename, datastore):
     buffer = bytearray()
+    parser = Parser(buffer)
     with open(filename, "rb") as f:
         while True:
             data = f.read(4096)
             if not data:
                 break
             buffer.extend(data)
+    return buffer
 
-    while True:
-        frames, frame_size = parse_frame(buffer)
-        if not frames:
-            break
-        cmd = frames[0].data.upper()
-        kwarg_key = isvalid(frames, 1, "None"),
-        kwarg_value = isvalid(frames, 2, "None"),
-        kwarg_ex_px = isvalid(frames, 3, "Expiry"),
-        kwarg_ex_px_value = isvalid(frames, 4, "None"),
-        datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
-        result = handle_command(cmd, datastore)
-        if isinstance(result, Exception):
-            print("Error: corrupt AOF file")
-            return
-
-def isvalid(self, data:list, index: int, safe: str):
-    try:
-        return getattr(data[index], "data")
-    except IndexError:
-        return safe
-
-def stop_expiry_monitor():
-# it will include datastore.ticker.Stop()
-# While True:
-# it will remove expired keys from the store
-# it will sleep 1 min.
-
-'''
-Data Store is a class
-If there is no Datastore use aof.
-'''
 
 '''
 def create_task()????????

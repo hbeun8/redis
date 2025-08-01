@@ -135,6 +135,8 @@ class Parser:
                 elements = []
                 total_size = pos  # Start from just after header
 
+
+
                 for _ in range(count):
                     if pos >= len(buffer):
                         return None, 0

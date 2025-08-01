@@ -5,24 +5,20 @@ from expiry import Expiry
 from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplestring
 import threading
 import asyncio
-
-def start_async_loop_in_thread(cache):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.create_task(asyncio.to_thread(cache.run_scan))
-    loop.run_forever()
+from persistence import AppendOnlyPersister, restore_from_file
 
 'create an instance of Datastore and Expiry. They have to be not None'
 cache = Datastore({"key": "value", "Expiry": "value"})
-e = Expiry({"key": "value", "Expiry": "value"})
+persister = AppendOnlyPersister("log.aof")
+#***
+scan = threading.Thread(target=cache.run_scan, args=(), daemon=True)
+scan.start()
+#***
 
-#***
-threading.Thread(target=start_async_loop_in_thread, args=(cache,), daemon=True).start()
-#***
+
 def handle_command(command, dictionary, persister=None):
 
     datastore = Dict(dictionary)
-
     match command:
         case "CONFIG":
             return _handle_config()
@@ -31,7 +27,7 @@ def handle_command(command, dictionary, persister=None):
         case "DEL":
             return _handle_del(datastore, persister)
         case "ECHO":
-            return _handle_echo(datastore)
+            return "" # handled in the connection_handler as part of redis min connection requirements.
         case "EXISTS":
             return _handle_exists(datastore)
         case "INCR":
@@ -103,6 +99,7 @@ def _handle_lrange(datastore):
     except Exception:
         return "(empty) {empty)"
 
+'''
 def _handle_echo(data):
     try:
         if isinstance(data, str):
@@ -117,14 +114,15 @@ def _handle_echo(data):
 
     except Exception as e:
         return "-Err"
+'''
 
 def resp_encoder_get(data):
-    if isinstance(data, list):
-        if len(data) == 0:
-            return ""
-        data = " ".join(data)
-        if data == [None]:
-            '*-1\r\n'
+
+    if len(data) == 0:
+        return ""
+    data = " ".join(data)
+    if data == [None]:
+        '*-1\r\n'
     if data is None:
         return ""
     return f"*1\r\n${len(data)}\r\n{data}\r\n"
@@ -146,7 +144,7 @@ def _handle_lpush(datastore, persister):
         for _ in range(len(arr)):
                 temp_arr.append(arr[_])
         datastore = {ds_key: temp_arr, "Expiry": "None"}
-        list = e.ladd(cache.Add(datastore))  # cache.add and e.ladd returns array of datastore and then a list
+        list = cache.Add(datastore)  # cache.add and e.ladd returns array of datastore and then a list
         if list:
             return f'integer (len(list))'
         else:
@@ -157,7 +155,7 @@ def _handle_lpush(datastore, persister):
         ds = Datastore({ds_key: arr, "Expiry": "None"})
         if ds:
             for key in ds.keys():
-                if e.ladd(cache.Add(datastore)):  # cache.add and e.ladd returns array of datastore
+                if cache.Add(datastore):  # cache.add and e.ladd returns array of datastore
                     return f'integer (len(temp_arr))'
         else:
             return "-Error"
@@ -243,7 +241,7 @@ def _handle_set_px(datastore, persister):
 def _handle_get(datastore):
     try:
         k = datastore.key
-        return e.get_value(cache.Get(k)) # returns array of datastore and then returns key value.
+        return cache.Get(k) # returns array of datastore and then returns key value.
     except Exception as ex:
         return f"-Error: {ex}"
 
@@ -251,7 +249,7 @@ def _handle_get(datastore):
 def _handle_sync(datastore):
     if datastore:
         for key in datastore.keys():
-            result = e.get_ds(cache.Get(datastore)) # returns array of datastore
+            result = cache.Get(datastore) # returns array of datastore
             return result
     else:
         return "Key not found"

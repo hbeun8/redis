@@ -1,6 +1,7 @@
 
 from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplestring
 import command_handler
+from persistence import restore_from_file
 
 class ConnectionHandler:
     def __init__(self, conn):
@@ -14,13 +15,33 @@ class ConnectionHandler:
                 parser = Parser(data)
                 frames, _ = parser.parse_frame(data)
                 cmd = frames[0].data.upper()
-                if cmd == 'COMMAND':  #
+                if cmd == 'COMMAND':  # Remove this if you want Persister switched on startup.
                     self.conn.send(b"+OK'\r\n")
                     continue  # stay connected
                 if cmd == 'PING':
                     self.conn.send(b"+PONG\r\n")
                     continue
-
+                if cmd == "RESTORE": # or cmd == "COMMAND":
+                    try:
+                        buffer = restore_from_file("log.aof")
+                        while True:
+                            frames, frame_size = parser.parse_frame(buffer)
+                            if not frames:
+                                break
+                            cmd = frames[0].data.upper()
+                            kwarg_key = self.isvalid(frames, 1, "None"),
+                            kwarg_value = self.isvalid(frames, 2, "None"),
+                            kwarg_ex_px = self.isvalid(frames, 3, "Expiry"),
+                            kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
+                            datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
+                            result = command_handler.handle_command(cmd, datastore)
+                            output = self.resp_serialized(str(result))  # Consider appending any error message here
+                            if output:
+                                self.conn.send(output.encode())
+                            else:
+                                self.conn.send(b'\n')
+                    except Exception as e:
+                        return f"-Err (persister): {e}"
                 if cmd == 'ECHO':
                     if len(frames) == 2:
                         ds = frames[1].data
@@ -62,6 +83,7 @@ class ConnectionHandler:
                             kwarg_ex_px = self.isvalid(frames, 3, "Expiry"),
                             kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
                             datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
+
                 result = command_handler.handle_command(cmd, datastore)
                 output = self.resp_serialized(str(result))  # Consider appending any error message here
                 if output:

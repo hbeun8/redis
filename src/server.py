@@ -2,7 +2,6 @@
 import socket  # For network socket operations
 import datetime  # For timestamp generation
 import threading
-
 from connection_handler import ConnectionHandler
 
 def _client_thread(conn, addr, PORT, server):
@@ -56,8 +55,9 @@ class Server:
             # default echo loop
             else:
                 handler.handle_echo_loop()
+
     def shutdown(self, conn):
-        self.conn.close()
+        conn.close()
 
     def _handle_udp(self, s, port):
         print(f"Hi! UDP server on port {port}")

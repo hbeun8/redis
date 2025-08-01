@@ -9,29 +9,39 @@ The project is organized into the following components:
 ```
 redis_workshop/
 ├── src/
-|   |── main.py              # Entry point and command-line argument handling
-|   |── server.py            # Server setup and connection management
-├   |── connection_handler.py# Client connection handling and command processing
-├   |── protocol_handler.py  # Redis protocol parsing implementation
-├── tests/                  # Test suite
-│   ├── unit/               # Unit tests for individual components
+│   │── main.py              
+│   │── server.py            
+│   │── connection_handler.py
+│   │── protocol_handler.py  
+│   │── command_handler.py
+│   │── datastore.py
+│   │── log.aof
+│   │── out.pstats
+│   │── persistence.py
+│   │── task_handler.py
+tests/                  
+│   ├── unit/               
 │   │   ├── test_command.py
-│   │   └── test_datastore.py
-    |   |── test_expiry.py
-    |   |── test_main.py
-    |   |── test_protocol.py
-    |   |── test_server.py
-│   ├── integration/        # Integration tests for server functionality
-│   │   └── conftest.py
-    |   |── test_echo.py
-    |   |── test_exist_and_del.py
-    |   |── test_incr_decr.py
-        |── test_integration.py
-│       |── test_list_commands.py
-|       |── test_persistence.py
-|       |── test_ping.py
-|       |── test_set_and_get.py
-└── pytest.ini              # Pytest configuration
+│   │   │── test_datastore.py
+│   │   │── test_server.py
+│   │   │── test_connection_handler.py
+│   │   │── test_protocol_handler.py
+│   │   │── test_command_handler.py
+│   │   │── test_datastore.py
+│   │   │── test_persistance.py
+│   │   │── test_task_handler.py
+│   ├── integration/
+│   │   │── conftest.py
+│   |   │── test_echo.py
+│   │   │── test_exist_and_del.py
+│   │   │── test_incr_decr.py
+│   │   │── test_integration.py
+│   │   │── test_list_commands.py
+│   │   │── test_persistence.py
+│   │   │── test_ping.py
+│   │   │── test_set_and_get.py
+└── pyprojec.toml
+
 ```
 
 ## Components
@@ -115,14 +125,15 @@ SET: 6796.25 requests per second, p50=5.023 msec
 GET: 5263.43 requests per second, p50=7.023 msec 
 
 2) Optimizations*:
-   1) pypy:
-      SET: 16286.65 requests per second, p50=2.127 msec                   
-      GET: 19470.40 requests per second, p50=1.815 msec 
-   2) Code Improvements (builtin):
-      SET: 20691.08 requests per second, p50=1.935 msec
-      GET: 24160.43 requests per second, p50=1.671 msec
-   3) Concurrency (aysncio):
+   1) Background scan switched on:
+      SET: 21222.41 requests per second, p50=1.567 msec
+      GET: 26497.09 requests per second, p50=1.311 msec
       
-## BENCHMARK:
+   2) Background scan switched of:
+      SET: 24709.66 requests per second, p50=1.375 msec
+      GET: 24125.45 requests per second, p50=1.487 msec
+
+_*using cache friendly datastructures_
+## BENCHMARK (P.I.T):
 SET: 71684.59 requests per second, p50=0.543 msec                   
 GET: 73475.39 requests per second, p50=0.543 msec

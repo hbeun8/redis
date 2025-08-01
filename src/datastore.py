@@ -28,7 +28,6 @@ class Datastore:
         self._lock = Lock()
         self.keys = list(vars(self).keys())
 
-
     def Remove(self, k):
         with self._lock:
             try:
@@ -61,13 +60,14 @@ class Datastore:
 
     def isExpired(self, v):
         try:
+
             sep_1 = v.find(":")+1
             sep_2 = v[sep_1:].find(":")
             expiry = v[sep_1:sep_1+sep_2]
             if expiry == 'None':
                 return False
-            if isinstance(expiry, (str, int, float)):
-                return time.time_ns() > int(float(expiry))
+            #if isinstance(expiry, (str, int, float)):
+            return time.time_ns() > int(float(expiry))
         except Exception as e:
             return f"isExpired: {e}"
     def run_scan(self, delay=0.1):
@@ -79,7 +79,7 @@ class Datastore:
             print("Passive Delete Expired Keys:", e)
 
     def scan(self):
-        for key in (self.keys[i] for i in (randint(0, (len(self.keys) - 1)) for k in range(min(20, round(0.25 * len(self.keys)))))):
+        for key in (self.keys[i] for i in (randint(0, (len(self.keys) - 1)) for k in range(min(20, round(0.25 * len(self.keys))))) if self.isExpired(getattr(self, self.keys[i]))):
             delattr(self, key)
 
     def Exists(self, k):
