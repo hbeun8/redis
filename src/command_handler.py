@@ -169,7 +169,7 @@ def _handle_rpush(command, datastore, persister):
         ds = Datastore({ds_key: temp_arr, "Expiry": "None"})
         if ds:
             for key in ds.keys():
-                if e.ladd(cache.Add(datastore)):  # cache.add and e.ladd returns array of datastore
+                if cache.Add(datastore):  # cache.add and e.ladd returns array of datastore
                     return f'integer (len(temp_arr))'
         else:
             return "-Error"
@@ -199,9 +199,9 @@ def _handle_config(command, datastore, persister):
               "RPUSH",
               ]
     length = len(string)
-    components = f"*{len(string)}\r\n"
+    components = f"*{len(string)}\n"
     for element in string:
-        components += f"${len(element)}\r\n{element}\r\n"
+        components += f"${len(element)}\n{element}\n"
     return components
 
 def _handle_unrecognised_command(command, datastore, persister):
