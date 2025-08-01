@@ -3,6 +3,7 @@ from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplest
 import command_handler
 from persistence import restore_from_file, AppendOnlyPersister
 import time
+from datastore import Dict
 persister = AppendOnlyPersister("log.aof")
 
 class ConnectionHandler:
@@ -94,6 +95,7 @@ class ConnectionHandler:
                             kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
                             datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
 
+                datastore = Dict(datastore)
                 result = command_handler.handle_command(cmd, datastore, persister)
                 output = self.resp_serialized(str(result))  # Consider appending any error message here
                 if output:

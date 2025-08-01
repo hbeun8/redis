@@ -20,7 +20,7 @@ class AppendOnlyPersister:
         self._filename = filename
         self._file = open(filename, mode='ab', buffering=0)
 
-    def log_command(self, command="", data):
+    def log_command(self, command, data):
         # Write the length of the command followed by the encoded command items
         self._file.write(f"{len(command)}\n".encode())
         for item in data:
@@ -35,6 +35,7 @@ class AppendOnlyPersister:
 
     # Returns first and last consecutive keys (and maybe appends set keys) and removes everything in the middle and save in flattened.aof
     # After running this command, it runs the check the command.
+    '''
     def flatten(self):
         with self._file as f:
             for buffer in f:
@@ -72,6 +73,7 @@ class AppendOnlyPersister:
         t = threading.Thread(target=self.safe_log_rebuild, args=(repl_filename), daemon=True)
         t.start()
 
+'''
 
 def restore_from_file(filename, datastore):
     buffer = bytearray()

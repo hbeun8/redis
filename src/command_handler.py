@@ -7,9 +7,10 @@ import threading
 import asyncio
 from persistence import AppendOnlyPersister, restore_from_file
 
-'create an instance of Datastore and Expiry. They have to be not None'
+'create an instance of Datastore. They have to be not None'
 cache = Datastore({"key": "value", "Expiry": "value"})
 persister = AppendOnlyPersister("log.aof")
+
 #***
 scan = threading.Thread(target=cache.run_scan, args=(), daemon=True)
 scan.start()
@@ -45,6 +46,9 @@ def handle_command(command, datastore, persister=None):
             if exp == "EX" or exp == "ex":
                 return _handle_set_ex(datastore, persister)
             '''
+            print(command)
+            print(datastore)
+            print(persister)
             return _handle_set(command, datastore, persister)
         case "GET":
             return _handle_get(command, datastore, persister)
@@ -94,7 +98,7 @@ def _handle_lrange(command, datastore, persister):
         end = datastore.keys[2]
         return arr[start:end]
     except Exception:
-        return "(empty) {empty)"
+        return f"(empty)"
 
 '''
 def _handle_echo(data):
@@ -143,7 +147,7 @@ def _handle_lpush(command, datastore, persister):
         datastore = {ds_key: temp_arr, "Expiry": "None"}
         list = cache.Add(datastore)  # cache.add and e.ladd returns array of datastore and then a list
         if list:
-            return f'integer (len(list))'
+            return f'integer {len(list)}'
         else:
             return "-Error"
     else: # new arr
@@ -152,8 +156,8 @@ def _handle_lpush(command, datastore, persister):
         ds = Datastore({ds_key: arr, "Expiry": "None"})
         if ds:
             for key in ds.keys():
-                if cache.Add(datastore):  # cache.add and e.ladd returns array of datastore
-                    return f'integer (len(temp_arr))'
+                if cache.Add(datastore):  # cache.add
+                    return f'integer {len(arr)}'
         else:
             return "-Error"
 
@@ -169,8 +173,8 @@ def _handle_rpush(command, datastore, persister):
         ds = Datastore({ds_key: temp_arr, "Expiry": "None"})
         if ds:
             for key in ds.keys():
-                if cache.Add(datastore):  # cache.add and e.ladd returns array of datastore
-                    return f'integer (len(temp_arr))'
+                if cache.Add(datastore):
+                    return f'integer {len(temp_arr)}'
         else:
             return "-Error"
     else: # new arrr
@@ -179,8 +183,8 @@ def _handle_rpush(command, datastore, persister):
         ds = Datastore({ds_key: arr, "Expiry": "None"})
         if ds:
             for key in ds.keys():
-                if e.ladd(cache.Add(datastore)):  # cache.add and e.ladd returns array of datastore
-                    return f'integer (len(temp_arr))'
+                if cache.Add(datastore):
+                    return f'integer {len(arr)}'
         else:
             return "-Error"
 
@@ -210,8 +214,10 @@ def _handle_unrecognised_command(command, datastore, persister):
 def _handle_set(command, datastore, persister):
     try:
         k = datastore.key
+        print(k)
         v = datastore.s
-        cache.Add(k, v) # cache.add and e.ladd returns array of datastore
+        print(v)
+        cache.Add(k, v) # cache.add returns array of datastore
         return 'OK'
     except Exception as ex:
         return f"-Error: {ex}"
@@ -238,7 +244,7 @@ def _handle_set_px(command, datastore, persister):
 def _handle_get(command, datastore, persister):
     try:
         k = datastore.key
-        if cache.Get(k) =="(nil)"
+        if cache.Get(k) =="(nil)":
             persister.log_command(command, resp_encoder_get("nil")) # synthesize delete for persister in case of expired keys
         return cache.Get(k) # returns array of datastore and then returns key value.
     except Exception as ex:
