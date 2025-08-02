@@ -7,7 +7,7 @@ from random import randint
 
 class Dict:
     def __init__(self, data: dict):
-        self.key = next(iter(data))
+        self.key = next(iter(data)) if data else None
         self.value = data[self.key]
         self.expiry_name = list(data.keys())[1]
         if self.expiry_name.upper() == 'PX':
@@ -21,6 +21,9 @@ class Dict:
         self.u_s = data
         self.curr = datetime.now()
         self.keys = data.keys()
+        self.start =  self.expiry[0] if self.expiry else None
+        self.end = self.expiry[1] if self.expiry else None
+
 
 class Datastore:
     def __init__(self, data: dict):
@@ -80,6 +83,97 @@ class Datastore:
     def scan(self):
         for key in (self.keys[i] for i in (randint(0, (len(self.keys) - 1)) for k in range(min(20, round(0.25 * len(self.keys))))) if self.isExpired(getattr(self, self.keys[i]))):
             delattr(self, key)
+
+    def LPUSH(self, k, v):
+        # existing key
+        if hasattr(self, k):
+            print("inside found")
+            s_v = getattr(self, k)
+            new_s_v, length = self.build_new_arrayfied_v_lpush(s_v, self.unstringify_v(v))
+            print(new_s_v)
+            print(length)
+            setattr(self, k, new_s_v)
+            return f"(integer) {length}"
+        else:
+            print("inside notfound")
+            temp = []
+            temp.append(self.unstringify_v(v))
+            length = len(temp)
+            setattr(self, k, temp)
+            return f"(integer) {length}"
+
+
+    def RPUSH(self, k, v):
+        # existing key
+        if hasattr(self, k):
+            s_v = getattr(self, k)
+            new_s_v, length = self.build_new_arrayfied_v_rpush(s_v, self.unstringify_v(self, v))
+            setattr(self, k, new_s_v)
+            return f"(integer) {length}"
+        else:
+            temp = []
+            temp.append(self.unstringify_v(self, v))
+            length = len(temp)
+            setattr(self, k, temp)
+            return f"(integer) {length}"
+
+    def unstringify_v(self, v):
+        sep = v.find(":")
+        return v[:sep]
+
+    def build_new_arrayfied_v_lpush(self, s_v:str, v):
+        # if s_v is a value
+        print("inside build_new_arrayfied_v_lpush")
+        print(s_v)
+        length = len(s_v)
+        sep = str(s_v).find(":")
+        arr_value = s_v[:sep]
+        print(arr_value)
+        '''
+        if isinstance(arr_value, list):
+            arr_value.index(0, v)
+            s_v.replace(arr_value, v)
+            length = len(arr_value)
+        else:
+        '''
+        s_v = str(s_v)
+        temp_array = []
+        temp_array.append(v)
+        temp_array.append(arr_value)
+        s_v.replace(str(arr_value), str(temp_array))
+        length = len(temp_array)
+        return s_v, length
+
+    def build_new_arrayfied_v_rpush(self, s_v, v):
+        # if s_v is a value
+        sep_1 = s_v.find(":") + 1
+        arr_value = s_v[:sep_1]
+        if isinstance(arr_value, list):
+            temp_arr = arr_value
+            temp_arr.append(v)
+            s_v.replace(arr_value, temp_arr)
+            length = len(temp_arr)
+        else:
+            temp_array = []
+            temp_array.append(arr_value)
+            temp_array.append(v)
+            s_v.replace(arr_value, temp_array)
+            length = len(temp_array)
+        return s_v, length
+
+    def lrange(self, k, start, end):
+        if not hasattr(self, k):
+            return f"(empty array)"
+        s_v = getattr(self, k)
+        sep = s_v.find(":")
+        arr = s_v[:sep]
+        if isinstance(arr, list):
+            res = ""
+            for i in range(start, end):
+                res += f"{i}) {arr[i]}"
+            return res
+        else:
+            return f"(empty array)"
 
     def Exists(self, k):
         with self._lock:

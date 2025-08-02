@@ -133,57 +133,13 @@ def _handle_ping(command, datastore, persister):
         return f"-ERROR {str(e)}\r\n"
 
 def _handle_lpush(command, datastore, persister):
-    # {arr: values, expiry: none, type: none}
-    if _handle_exists(datastore) == "(integer) 1":
-        arr = _handle_get(datastore)
-        ds_key = datastore.key
-        temp_arr = []
-        temp_arr.insert(0, datastore[ds_key])
-        for _ in range(len(arr)):
-                temp_arr.append(arr[_])
-        datastore = {ds_key: temp_arr, "Expiry": "None"}
-        list = cache.Add(datastore)  # cache.add and e.ladd returns array of datastore and then a list
-        if list:
-            return f'integer {len(list)}'
-        else:
-            return "-Error"
-    else: # new arr
-        ds_key = datastore.key
-        arr = [datastore[ds_key]]
-        ds = Datastore({ds_key: arr, "Expiry": "None"})
-        if ds:
-            for key in ds.keys():
-                if cache.Add(datastore):  # cache.add
-                    return f'integer {len(arr)}'
-        else:
-            return "-Error"
+    return cache.LPUSH(datastore.key, datastore.value)
 
 def _handle_rpush(command, datastore, persister):
-    # {arr: values, expiry: none, type: none}
-    if _handle_exists(datastore):
-        arr = list(_handle_get(datastore))
-        ds_key = datastore.key
-        temp_arr = []
-        temp_arr.insert(0, datastore[ds_key])
-        for _ in range(len(arr)):
-                temp_arr.append(arr[_])
-        ds = Datastore({ds_key: temp_arr, "Expiry": "None"})
-        if ds:
-            for key in ds.keys():
-                if cache.Add(datastore):
-                    return f'integer {len(temp_arr)}'
-        else:
-            return "-Error"
-    else: # new arrr
-        ds_key = datastore.key
-        arr = [datastore[ds_key]]
-        ds = Datastore({ds_key: arr, "Expiry": "None"})
-        if ds:
-            for key in ds.keys():
-                if cache.Add(datastore):
-                    return f'integer {len(arr)}'
-        else:
-            return "-Error"
+    return cache.RPUSH(datastore.key, datastore.value)
+
+def _handle_lrange(command, datastore, persister):
+    cache.lrange(datastore.key, datastore.start, datastore.end) # range values are already part of the datastore
 
 def _handle_config(command, datastore, persister):
     string = ["List of supported commands:",
@@ -211,9 +167,7 @@ def _handle_unrecognised_command(command, datastore, persister):
 def _handle_set(command, datastore, persister):
     try:
         k = datastore.key
-        print(k)
         v = datastore.s
-        print(v)
         cache.Add(k, v) # cache.add returns array of datastore
         return 'OK'
     except Exception as ex:
