@@ -179,12 +179,8 @@ class Datastore:
         if not hasattr(self, k):
             return f"(empty array)"
         s_v = getattr(self, k)
-        print(list(s_v)[int(start):int(end)])
         return list(s_v)[int(start):int(end)]
-        '''
-        for i in range(start, min(end, len(s_v))):
-            print(f"{i} {list(s_v)[i]}")
-        '''
+
 
     def Exists(self, k):
         with self._lock:

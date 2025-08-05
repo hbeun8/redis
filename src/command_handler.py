@@ -4,11 +4,11 @@ from datastore import Datastore, Dict
 from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplestring
 import threading
 import asyncio
-from persistence import AppendOnlyPersister, restore_from_file
+#from persistence import AppendOnlyPersister, restore_from_file
 
 'create an instance of Datastore. They have to be not None'
 cache = Datastore({"key": "value", "Expiry": "value"})
-persister = AppendOnlyPersister("log.aof")
+#persister = AppendOnlyPersister("log.aof")
 
 #***
 scan = threading.Thread(target=cache.run_scan, args=(), daemon=True)

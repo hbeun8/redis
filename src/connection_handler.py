@@ -13,7 +13,7 @@ class ConnectionHandler:
     def handle_execute(self):
         while True:
                 data = self.conn.recv(4096)
-                persister.log_command("", data)
+                #persister.log_command("", data)
                 if not data:  # <-- peer hung up
                     break
                 parser = Parser(data)
@@ -103,7 +103,7 @@ class ConnectionHandler:
                 result = command_handler.handle_command(cmd, datastore, persister)
                 output = self.resp_serialized(str(result))  # Consider appending any error message here
                 if output:
-                    persister.log_command(cmd, output.encode())
+                    #persister.log_command(cmd, output.encode())
                     self.conn.send(output.encode())
                 else:
                     self.conn.send(b'\n')

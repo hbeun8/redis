@@ -16,7 +16,7 @@ from protocol_handler import Parser
 import threading
 
 class AppendOnlyPersister:
-    def __init__(self, filename):
+    def __init__(self, filename: object) -> None:
         self._filename = filename
         self._file = open(filename, mode='ab', buffering=0)
 
