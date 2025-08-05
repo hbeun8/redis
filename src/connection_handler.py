@@ -18,8 +18,6 @@ class ConnectionHandler:
                     break
                 parser = Parser(data)
                 frames, _ = parser.parse_frame(data)
-                print("frames")
-                print(frames)
                 cmd = frames[0].data.upper()
                 if cmd == 'COMMAND':  # Remove this if you want Persister switched on startup.
                     self.conn.send(b"+OK'\r\n")
@@ -92,7 +90,8 @@ class ConnectionHandler:
                             kwarg_arr_key = self.isvalid(frames, 1, "None"),
                             kwarg_arr_start = self.isvalid(frames, 2, "None"),
                             kwarg_arr_end = self.isvalid(frames, 3, "None")
-                            datastore = {"key": kwarg_arr_key[0],"start":kwarg_arr_start[0], "end": kwarg_arr_end[0]}
+                            datastore = {"lrange_key": kwarg_arr_key[0],"start":kwarg_arr_start[0], "end": kwarg_arr_end}
+
                         else:
                             kwarg_key = self.isvalid(frames, 1, "None"),
                             kwarg_value = self.isvalid(frames, 2, "None"),

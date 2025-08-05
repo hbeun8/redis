@@ -9,6 +9,10 @@ from protocol_handler import Bulkstring
 class Dict:
     def __init__(self, data: dict):
         self.key = next(iter(data)) if data else None
+        try:
+            self.lrange_key = data["lrange_key"]
+        except (AttributeError, KeyError):
+            self.lrange_key = None
         self.value = data[self.key]
         try:
             self.expiry_name = list(data.keys())[1]
@@ -29,10 +33,10 @@ class Dict:
         self.u_s = data
         self.curr = datetime.now()
         self.keys = data.keys()
-        try: # overloading expiries as arrays for LPUSH, RPUSH, LRANGE. WE HAVE TO FIX THIS
-            self.start =  self.expiry[0] if self.expiry else None
-            self.end = self.expiry[1] if self.expiry else None
-        except (TypeError, IndexError) as e:
+        try:
+            self.start =  data["start"]
+            self.end = data["end"]
+        except (AttributeError,TypeError, IndexError, KeyError) as e:
             self.start = None
             self.end = None
 
@@ -99,42 +103,35 @@ class Datastore:
 
     def LPUSH(self, k, v):
         # existing key
-        print("key")
-        print(k)
-        print("value")
-        print(v[0].data) # this is a list of bulksstrings
-        for el in v:
-            print(v)
         if hasattr(self, k):
-            print("inside found")
-            deque_v = getattr(self, k)
-
-            new_s_v, length = self.build_new_arrayfied_v_lpush(s_v, self.unstringify_v(v))
-            print(new_s_v)
-            print(length)
-            setattr(self, k, new_s_v)
+            #deque_v = getattr(self, k)
+            for el in v:
+                self.deque.appendleft(el.data)
+            setattr(self, k, self.deque)
+            length = len(list(self.deque))
             return f"(integer) {length}"
         else:
-            print("inside notfound")
             for el in v:
-                self.deque.append(el.data)
+                self.deque.appendleft(el.data)
             length = len(list(self.deque))
-            setattr(self, k, self.deque)
+            setattr(self, k, list(self.deque))
             return f"(integer) {length}"
 
 
     def RPUSH(self, k, v):
         # existing key
         if hasattr(self, k):
-            s_v = getattr(self, k)
-            new_s_v, length = self.build_new_arrayfied_v_rpush(s_v, self.unstringify_v(self, v))
-            setattr(self, k, new_s_v)
+            #deque_v = getattr(self, k)
+            for el in v:
+                self.deque.append(el.data)
+            setattr(self, k, self.deque)
+            length = len(list(self.deque))
             return f"(integer) {length}"
         else:
-            temp = []
-            temp.append(self.unstringify_v(self, v))
-            length = len(temp)
-            setattr(self, k, temp)
+            for el in v:
+                self.deque.append(el.data)
+            length = len(list(self.deque))
+            setattr(self, k, list(self.deque))
             return f"(integer) {length}"
 
     def unstringify_v(self, v):
@@ -143,12 +140,9 @@ class Datastore:
 
     def build_new_arrayfied_v_lpush(self, s_v:str, v):
         # if s_v is a value
-        print("inside build_new_arrayfied_v_lpush")
-        print(s_v)
         length = len(s_v)
         sep = str(s_v).find(":")
         arr_value = s_v[:sep]
-        print(arr_value)
         '''
         if isinstance(arr_value, list):
             arr_value.index(0, v)
@@ -185,15 +179,12 @@ class Datastore:
         if not hasattr(self, k):
             return f"(empty array)"
         s_v = getattr(self, k)
-        sep = s_v.find(":")
-        arr = s_v[:sep]
-        if isinstance(arr, list):
-            res = ""
-            for i in range(start, end):
-                res += f"{i}) {arr[i]}"
-            return res
-        else:
-            return f"(empty array)"
+        print(list(s_v)[int(start):int(end)])
+        return list(s_v)[int(start):int(end)]
+        '''
+        for i in range(start, min(end, len(s_v))):
+            print(f"{i} {list(s_v)[i]}")
+        '''
 
     def Exists(self, k):
         with self._lock:

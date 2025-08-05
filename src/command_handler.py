@@ -84,34 +84,9 @@ def _handle_exists(command, datastore, persister):
         return "-Err wrong number of arguments for 'exists' command"
 
 def _handle_lrange(command, datastore, persister):
-    #datastore {arr: start, 'end': end}
-    k = datastore.key
-    v = datastore.s
-    try:
-        arr_name = datastore.keys[0]
-        start = datastore.keys[1]
-        arr = datastore[arr_name]
-        end = datastore.keys[2]
-        return arr[start:end]
-    except Exception:
-        return f"(empty)"
-
-'''
-def _handle_echo(data):
-    try:
-        if isinstance(data, str):
-            if data == "":
-                return "-Err"
-            else:
-                return data
-        if isinstance(data, Array):
-            return data.data.data
-        if isinstance(data, Bulkstring):
-            return data.data
-
-    except Exception as e:
-        return "-Err"
-'''
+    #datastore {key: <arr_name>, start: <start>, end: <end>}
+    result = cache.lrange(datastore.lrange_key, datastore.start, datastore.end)
+    return result
 
 def resp_encoder_get(data):
 
@@ -137,8 +112,6 @@ def _handle_lpush(command, datastore, persister):
 def _handle_rpush(command, datastore, persister):
     return cache.RPUSH(datastore.key, datastore.value)
 
-def _handle_lrange(command, datastore, persister):
-    cache.lrange(datastore.key, datastore.start, datastore.end) # range values are already part of the datastore
 
 def _handle_config(command, datastore, persister):
     string = ["List of supported commands:",
