@@ -4,20 +4,28 @@ from datetime import datetime, timedelta
 import time
 from random import randint
 from collections import deque
+from protocol_handler import Bulkstring
 
 class Dict:
     def __init__(self, data: dict):
         self.key = next(iter(data)) if data else None
         self.value = data[self.key]
-        self.expiry_name = list(data.keys())[1]
-        if self.expiry_name.upper() == 'PX':
-            self.expiry = time.time_ns() + int(float(data[self.expiry_name])) * 1e+6
-        elif self.expiry_name.upper() == 'EX':
-            self.expiry = time.time_ns() + int(float(data[self.expiry_name])) * 1e+9
-        else:
+        try:
+            self.expiry_name = list(data.keys())[1]
+        except IndexError:
+            self.expiry_name = None
+        try:
+            if self.expiry_name.upper() == 'PX':
+                self.expiry = time.time_ns() + int(float(data[self.expiry_name])) * 1e+6
+            elif self.expiry_name.upper() == 'EX':
+                self.expiry = time.time_ns() + int(float(data[self.expiry_name])) * 1e+9
+        except AttributeError:
             self.expiry = None
         self.type = data["type"] if "type" in data else None
-        self.s = f"{self.value}:{self.expiry}:{self.type}"
+        try:
+            self.s = f"{self.value}:{self.expiry}:{self.type}"
+        except AttributeError: # in case there is no expiries
+            self.s = f"{self.value}:{self.type}"
         self.u_s = data
         self.curr = datetime.now()
         self.keys = data.keys()
@@ -32,7 +40,7 @@ class Datastore:
     def __init__(self, data: dict):
         self._lock = Lock()
         self.keys = list(vars(self).keys()) # or just use list(dir(self))
-        self.arr = deque()
+        self.deque = deque()
 
     def Remove(self, k):
         with self._lock:
@@ -91,9 +99,16 @@ class Datastore:
 
     def LPUSH(self, k, v):
         # existing key
+        print("key")
+        print(k)
+        print("value")
+        print(v[0].data) # this is a list of bulksstrings
+        for el in v:
+            print(v)
         if hasattr(self, k):
             print("inside found")
-            s_v = getattr(self, k)
+            deque_v = getattr(self, k)
+
             new_s_v, length = self.build_new_arrayfied_v_lpush(s_v, self.unstringify_v(v))
             print(new_s_v)
             print(length)
@@ -101,10 +116,10 @@ class Datastore:
             return f"(integer) {length}"
         else:
             print("inside notfound")
-            temp = []
-            temp.append(self.unstringify_v(v))
-            length = len(temp)
-            setattr(self, k, temp)
+            for el in v:
+                self.deque.append(el.data)
+            length = len(list(self.deque))
+            setattr(self, k, self.deque)
             return f"(integer) {length}"
 
 

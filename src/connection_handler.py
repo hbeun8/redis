@@ -18,6 +18,8 @@ class ConnectionHandler:
                     break
                 parser = Parser(data)
                 frames, _ = parser.parse_frame(data)
+                print("frames")
+                print(frames)
                 cmd = frames[0].data.upper()
                 if cmd == 'COMMAND':  # Remove this if you want Persister switched on startup.
                     self.conn.send(b"+OK'\r\n")
@@ -84,14 +86,13 @@ class ConnectionHandler:
                     elif len(frames) > 2 :
                         if cmd == "LPUSH" or cmd == "RPUSH":
                             kwarg_arr = self.isvalid(frames, 1, "None"),
-                            kwarg_arr_list = self.isvalid(frames, 2, "[]"),
-                            datastore = {kwarg_arr[0]: kwarg_arr_start[0]}
+                            kwarg_arr_list = self.isvalid(frames, 10, frames[2:]),
+                            datastore = {kwarg_arr[0]: kwarg_arr_list[0]}
                         elif cmd == "LRANGE":
-                            kwarg_arr = self.isvalid(frames, 1, "None"),
-                            kwarg_arr_list = self.isvalid(frames, 2, "None"),
-                            kwarg_arr_start = self.isvalid(frames, 3, "None"),
-                            kwarg_arr_end = self.isvalid(frames, 4, "None")
-                            datastore = {kwarg_arr[0]: kwarg_arr_start[0], "end": kwarg_arr_end[0]}
+                            kwarg_arr_key = self.isvalid(frames, 1, "None"),
+                            kwarg_arr_start = self.isvalid(frames, 2, "None"),
+                            kwarg_arr_end = self.isvalid(frames, 3, "None")
+                            datastore = {"key": kwarg_arr_key[0],"start":kwarg_arr_start[0], "end": kwarg_arr_end[0]}
                         else:
                             kwarg_key = self.isvalid(frames, 1, "None"),
                             kwarg_value = self.isvalid(frames, 2, "None"),
@@ -112,7 +113,7 @@ class ConnectionHandler:
     def isvalid(self, data:list, index: int, safe: str):
         try:
             return getattr(data[index], "data")
-        except IndexError:
+        except (IndexError, TypeError):
             return safe
 
 
