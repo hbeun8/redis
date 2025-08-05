@@ -3,7 +3,7 @@ from threading import Lock
 from datetime import datetime, timedelta
 import time
 from random import randint
-
+from collections import deque
 
 class Dict:
     def __init__(self, data: dict):
@@ -32,6 +32,7 @@ class Datastore:
     def __init__(self, data: dict):
         self._lock = Lock()
         self.keys = list(vars(self).keys()) # or just use list(dir(self))
+        self.arr = deque()
 
     def Remove(self, k):
         with self._lock:
@@ -75,6 +76,7 @@ class Datastore:
             return time.time_ns() > int(float(expiry))
         except Exception as e:
             return f"isExpired: {e}"
+
     def run_scan(self, delay=0.1):
         try:
             while True:
@@ -265,15 +267,6 @@ class Datastore:
                     return "+OK"
                 if v == "None:None:None" or v == "" or k == "" or k is None:
                     return "-ERR wrong number of arguments for 'set' command"
-            except Exception as e:
-                return f"-ERR {e}"
-
-    def AddX(self, data:dict):
-        with self._lock:   #
-            try:
-                # Light Version
-                setattr(self._data, self.key, data)
-                return data
             except Exception as e:
                 return f"-ERR {e}"
 

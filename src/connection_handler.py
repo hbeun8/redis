@@ -82,7 +82,11 @@ class ConnectionHandler:
                             continue
                         datastore = {getattr(frames[1], "data"): "NONE", "Expiry": "NONE"}
                     elif len(frames) > 2 :
-                        if cmd == "LRANGE":
+                        if cmd == "LPUSH" or cmd == "RPUSH":
+                            kwarg_arr = self.isvalid(frames, 1, "None"),
+                            kwarg_arr_list = self.isvalid(frames, 2, "[]"),
+                            datastore = {kwarg_arr[0]: kwarg_arr_start[0]}
+                        elif cmd == "LRANGE":
                             kwarg_arr = self.isvalid(frames, 1, "None"),
                             kwarg_arr_list = self.isvalid(frames, 2, "None"),
                             kwarg_arr_start = self.isvalid(frames, 3, "None"),
