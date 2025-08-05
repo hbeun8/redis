@@ -38,13 +38,6 @@ def handle_command(command, datastore, persister=None):
         case "RPUSH":
             return _handle_rpush(command, datastore, persister)
         case "SET":
-            '''
-            exp = datastore.expiry_name
-            if exp == "PX" or exp == "px":
-                return _handle_set_px(datastore, persister)
-            if exp == "EX" or exp == "ex":
-                return _handle_set_ex(datastore, persister)
-            '''
             return _handle_set(command, datastore, persister)
         case "GET":
             return _handle_get(command, datastore, persister)
@@ -144,25 +137,6 @@ def _handle_set(command, datastore, persister):
         return 'OK'
     except Exception as ex:
         return f"-Error: {ex}"
-
-def _handle_set_ex(command, datastore, persister):
-    try:
-        k = datastore.key
-        v = datastore.s
-        cache.AddEX(k, v) # cache.add and e.ladd returns array of datastore
-        return 'OK'
-    except Exception as ex:
-        return f"-Error: {ex}"
-
-def _handle_set_px(command, datastore, persister):
-    try:
-        k = datastore.key
-        v = datastore.s
-        cache.AddPX(k, v) # cache.add and e.ladd returns array of datastore
-        return 'OK'
-    except Exception as ex:
-        return f"-Error: {ex}"
-
 
 def _handle_get(command, datastore, persister):
     try:

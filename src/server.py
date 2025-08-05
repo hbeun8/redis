@@ -65,3 +65,5 @@ class Server:
             data, addr = s.recvfrom(1024)
             date_str = str(datetime.datetime.now()).encode()
             s.sendto(date_str, addr)
+
+

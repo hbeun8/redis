@@ -82,7 +82,7 @@ class Datastore:
             sep_1 = v.find(":")+1
             sep_2 = v[sep_1:].find(":")
             expiry = v[sep_1:sep_1+sep_2]
-            if expiry == 'None':
+            if expiry == 'None' or expiry == '' or expiry is None:
                 return False
             #if isinstance(expiry, (str, int, float)):
             return time.time_ns() > int(float(expiry))
@@ -134,46 +134,6 @@ class Datastore:
             setattr(self, k, list(self.deque))
             return f"(integer) {length}"
 
-    def unstringify_v(self, v):
-        sep = v.find(":")
-        return v[:sep]
-
-    def build_new_arrayfied_v_lpush(self, s_v:str, v):
-        # if s_v is a value
-        length = len(s_v)
-        sep = str(s_v).find(":")
-        arr_value = s_v[:sep]
-        '''
-        if isinstance(arr_value, list):
-            arr_value.index(0, v)
-            s_v.replace(arr_value, v)
-            length = len(arr_value)
-        else:
-        '''
-        s_v = str(s_v)
-        temp_array = []
-        temp_array.append(v)
-        temp_array.append(arr_value)
-        s_v.replace(str(arr_value), str(temp_array))
-        length = len(temp_array)
-        return s_v, length
-
-    def build_new_arrayfied_v_rpush(self, s_v, v):
-        # if s_v is a value
-        sep_1 = s_v.find(":") + 1
-        arr_value = s_v[:sep_1]
-        if isinstance(arr_value, list):
-            temp_arr = arr_value
-            temp_arr.append(v)
-            s_v.replace(arr_value, temp_arr)
-            length = len(temp_arr)
-        else:
-            temp_array = []
-            temp_array.append(arr_value)
-            temp_array.append(v)
-            s_v.replace(arr_value, temp_array)
-            length = len(temp_array)
-        return s_v, length
 
     def lrange(self, k, start, end):
         if not hasattr(self, k):
@@ -189,21 +149,6 @@ class Datastore:
             else:
                 return "(integer) 0"
 
-    def set_new_expiry_ex(self, k, new_expiry):
-        try:
-            v = getattr(self, k)
-            new_v = self.build_new_v_ex(v, new_expiry)
-            self.Add(k, new_v) # override
-        except AttributeError:
-            return "(nil)"
-
-    def set_new_expiry_px(self, k, new_expiry):
-        try:
-            v = getattr(self, k)
-            new_v = self.build_new_v_px(v, new_expiry)
-            self.Add(k, new_v) # override
-        except AttributeError:
-            return "(nil)"
 
     def build_new_v_ex(self, v, new_expiry):
         sep_1 = v.find(":")+1
@@ -212,49 +157,6 @@ class Datastore:
         new_expiry_s = time.time_ns() + new_expiry*1e+9 # if seconds
         v.replace(expiry, str(new_expiry_s))
         return v
-
-    def build_new_v_px(self, v, new_expiry):
-        sep_1 = v.find(":")+1
-        sep_2 = v[sep_1:].find(":")
-        expiry = v[sep_1:sep_1+sep_2]
-        new_expiry_mils = time.time_ns() + new_expiry * 1e+6 # if milliseconds
-        new_expiry_mics = time.time_ns() + new_expiry * 1000 # if microseconds
-        v.replace(expiry, str(new_expiry_mils))
-        return v
-
-    def AddEX(self, k, v):
-        with self._lock:
-            try:
-                if hasattr(self, k):
-                    v = self.Get(k)
-                    expiry_nano = self.set_new_expiry_ex(k, v) # takes v which has expiry in seconds and sets
-                    setattr(self, k, v)
-                    pass #return "(already exists)" # we never reach this!
-                if v is None:
-                    return "-ERR wrong number of arguments for 'set' command"
-                if v is not None:
-                    setattr(self, k, v)
-                    return "+OK"
-                if v == "None:None:None" or v == "" or k == "" or k is None:
-                    return "-ERR wrong number of arguments for 'set' command"
-            except Exception as e:
-                return f"-ERR {e}"
-
-    def AddPX(self, k, v):
-        with self._lock:
-            try:
-                if hasattr(self, k):
-                    setattr(self, k, v)
-                    pass #return "(already exists)" # we never reach this!
-                if v is None:
-                    return "-ERR wrong number of arguments for 'set' command"
-                if v is not None:
-                    setattr(self, k, v)
-                    return "+OK"
-                if v == "None:None:None" or v == "" or k == "" or k is None:
-                    return "-ERR wrong number of arguments for 'set' command"
-            except Exception as e:
-                return f"-ERR {e}"
 
     def Add(self, k, v):
         with self._lock:
@@ -307,15 +209,6 @@ class Datastore:
                 return f"(integer) {new_v}"
             except AttributeError as e:
                 return f"-Err {e}"
-
-    def delete_expired_key(self, k):
-        try:
-            v = getattr(self, k)
-            if self.isExpired(v):
-                # set type = 1 and buld new v
-                delattr(self, k)
-        except AttributeError as e:
-            return f"-Err {e}"
 
     def keys(self):
         return list(self.data)
