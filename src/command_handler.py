@@ -1,7 +1,6 @@
 from typing_extensions import dataclass_transform
 
 from datastore import Datastore, Dict
-from expiry import Expiry
 from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplestring
 import threading
 import asyncio

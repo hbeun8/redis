@@ -21,9 +21,12 @@ class Dict:
         self.u_s = data
         self.curr = datetime.now()
         self.keys = data.keys()
-        self.start =  self.expiry[0] if self.expiry else None
-        self.end = self.expiry[1] if self.expiry else None
-
+        try: # overloading expiries as arrays for LPUSH, RPUSH, LRANGE. WE HAVE TO FIX THIS
+            self.start =  self.expiry[0] if self.expiry else None
+            self.end = self.expiry[1] if self.expiry else None
+        except (TypeError, IndexError) as e:
+            self.start = None
+            self.end = None
 
 class Datastore:
     def __init__(self, data: dict):
