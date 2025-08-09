@@ -43,6 +43,13 @@ tests/
 └── pyprojec.toml
 
 ```
+## Features:
+1.  Supported Commands: CONFIG, DECR, DEL, ECHO, EXISTS, INCR, LPUSH, LRANGE, PING, RPUSH, SET
+2. Passive Scanners for Expiries
+3. Persistence through Append only File.
+4. Concurrency through threading
+5. Tests
+
 
 ## Components
 
@@ -118,22 +125,3 @@ python main.py -p 8891 -e true
 python main.py -p 8001 -i I
 
 ```
-
-## Performance
-1) MVP: 
-SET: 6796.25 requests per second, p50=5.023 msec                   
-GET: 5263.43 requests per second, p50=7.023 msec 
-
-2) Optimizations*:
-   1) Background scan switched on:
-      SET: 21222.41 requests per second, p50=1.567 msec
-      GET: 26497.09 requests per second, p50=1.311 msec
-      
-   2) Background scan switched of:
-      SET: 24709.66 requests per second, p50=1.375 msec
-      GET: 24125.45 requests per second, p50=1.487 msec
-
-_*using cache friendly datastructures_
-## Benchmark (P.I.T):
-SET: 71684.59 requests per second, p50=0.543 msec                   
-GET: 73475.39 requests per second, p50=0.543 msec

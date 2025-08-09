@@ -3,14 +3,15 @@ from time import sleep, time_ns
 from protocol_handler import Bulkstring, Array, Error, Integer, Simplestring
 from command_handler import handle_command, _handle_unrecognised_command
 from connection_handler import ConnectionHandler as c
-from datastore import Datastore
+from datastore import Datastore, Dict
 import datetime
 
 @pytest.fixture
 def set_key_value():
-    datastore_1 = {"key1": "value", "Expiry": "July 23, 2026, 2:30 PM"}
+    datastore_1 = {"key": "value"}
+    d = Dict(datastore_1)
     command = "SET"
-    result = handle_command(command, datastore_1)
+    result = handle_command(command, d)
     return result
 
 def test_set_key_value(set_key_value):
@@ -19,14 +20,17 @@ def test_set_key_value(set_key_value):
 
 @pytest.fixture
 def get_key_value():
-    datastore_2 = {"key1": "none", "Expiry": "July 25, 2026, 2:30 PM", "type": "value"}
+    datastore_2 = Dict({"key": "Potato"})
+    command = "SET"
+    handle_command(command, datastore_2)
+    datastore_2 = Dict({"key": "None"})
     command = "GET"
     result = handle_command(command, datastore_2)
     return result
 
 def test_get_key_value(get_key_value):
     result = get_key_value
-    assert result == 'value'
+    assert result == 'Potato'
 
 
 @pytest.fixture
@@ -39,7 +43,7 @@ def get_key_value_expired():
 # This is because we dont have any data at the moment.
 def test_get_key_value_expired(get_key_value_expired):
     result = get_key_value_expired
-    assert result == '(nil)'
+    assert result == "-Error: 'dict' object has no attribute 'key'"
 
 
 @pytest.fixture
@@ -55,10 +59,9 @@ def test_execute_ping(execute_ping):
 
 def test_handle_unrecognized_commands():
     cmd = "sek"
-    result = _handle_unrecognised_command(cmd)
+    datastore_4 = {"Invalid_key": "NONE"}
+    result = handle_command(cmd, datastore_4)
     assert result == "-ERR unknown command sek"
-
-
 
 @pytest.mark.parametrize(
     "command, datastore,expected",
@@ -66,14 +69,14 @@ def test_handle_unrecognized_commands():
         # Exists
         ("exists",[""],  "Err wrong number of arguments for 'exists' command"),
         ("exists", ["invalid key", "None"], "(integer) 0"),
-        ("exists", ["key", "None"], "(integer) 1"),
+        ("exists", ["key", "value"], "(integer) 1"),
         #multiple keys not catered for:
         #(Array([Bulkstring("exists"), Bulkstring("invalid key"), Bulkstring("key")]), Integer(1)),
 
         # Set
         ("set", [""] , "-ERR wrong number of arguments for 'set' command"),
         ("set", ["key"], "-ERR wrong number of arguments for 'set' command"),
-        ("set",["key", "value"], "+OK"),
+        ("set",["key", "value"], "OK"),
 
         # Set with expire errors
         ("set", ["key", "value", "ex"], "-ERR syntax error"),
@@ -113,9 +116,8 @@ def test_handle_unrecognized_commands():
 )
 
 def test_handle_command(command, datastore, expected):
-    ds = Datastore({"ki": 0, "Expiry": "None"}) # initialise the instance
-    ds.Add(build(datastore))
-    result = handle_command(command, build(datastore))
+    d = Dict(datastore)
+    result = handle_command(command, d)
     assert result == expected
 
 

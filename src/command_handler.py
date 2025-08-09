@@ -2,21 +2,21 @@ from typing_extensions import dataclass_transform
 
 from datastore import Datastore, Dict
 from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplestring
+#from multiprocessing import Process
 import threading
-import asyncio
 #from persistence import AppendOnlyPersister, restore_from_file
 
 'create an instance of Datastore. They have to be not None'
 cache = Datastore({"key": "value", "Expiry": "value"})
 #persister = AppendOnlyPersister("log.aof")
 
-#***
+#*** Background Scan to remove expired keys
 scan = threading.Thread(target=cache.run_scan, args=(), daemon=True)
 scan.start()
 #***
 
 def handle_command(command, datastore, persister=None):
-    match command:
+    match command.upper():
         case "CONFIG":
             return _handle_config(command, datastore, persister)
         case "DECR":
@@ -71,10 +71,10 @@ def _handle_exists(command, datastore, persister):
     try:
         k = datastore.key
         if k == "" or k is None:
-            return "-Err wrong number of arguments for 'exists' command"
+            return "Err wrong number of arguments for 'exists' command"
         return cache.Exists(k)
-    except Exception as e:
-        return "-Err wrong number of arguments for 'exists' command"
+    except (AttributeError, TypeError) as e:
+        return "Err wrong number of arguments for 'exists' command"
 
 def _handle_lrange(command, datastore, persister):
     #datastore {key: <arr_name>, start: <start>, end: <end>}
@@ -82,15 +82,17 @@ def _handle_lrange(command, datastore, persister):
     return result
 
 def resp_encoder_get(data):
-
-    if len(data) == 0:
-        return ""
-    data = " ".join(data)
-    if data == [None]:
-        '*-1\r\n'
-    if data is None:
-        return ""
-    return f"*1\r\n${len(data)}\r\n{data}\r\n"
+    try:
+        if data is None:
+            return ""
+        if data == [None]:
+            return '*-1\r\n'
+        if len(data) == 0:
+            return ""
+        data = " ".join(data)
+        return f"*1\r\n${len(data)}\r\n{data}\r\n"
+    except TypeError as e:
+        print(e)
 
 def _handle_ping(command, datastore, persister):
     try:
@@ -135,14 +137,14 @@ def _handle_set(command, datastore, persister):
         v = datastore.s
         cache.Add(k, v) # cache.add returns array of datastore
         return 'OK'
-    except Exception as ex:
+    except AttributeError as ex:
         return f"-Error: {ex}"
 
 def _handle_get(command, datastore, persister):
     try:
         k = datastore.key
         if cache.Get(k) =="(nil)":
-            persister.log_command(command, resp_encoder_get("nil")) # synthesize delete for persister in case of expired keys
+            pass#persister.log_command(command, resp_encoder_get("nil")) # synthesize delete for persister in case of expired keys
         return cache.Get(k) # returns array of datastore and then returns key value.
     except Exception as ex:
         return f"-Error: {ex}"

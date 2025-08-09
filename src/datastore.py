@@ -8,23 +8,26 @@ from protocol_handler import Bulkstring
 
 class Dict:
     def __init__(self, data: dict):
-        self.key = next(iter(data)) if data else None
+        self.key = next(iter(data.keys())) if data else None
+        try:
+            self.value = data[self.key]
+        except AttributeError as e:
+            self.value = None
         try:
             self.lrange_key = data["lrange_key"]
-        except (AttributeError, KeyError):
+        except (TypeError, AttributeError, KeyError):
             self.lrange_key = None
-        self.value = data[self.key]
         try:
             self.expiry_name = list(data.keys())[1]
-        except IndexError:
+        except (AttributeError, IndexError):
             self.expiry_name = None
         try:
             if self.expiry_name.upper() == 'PX':
                 self.expiry = time.time_ns() + int(float(data[self.expiry_name])) * 1e+6
             elif self.expiry_name.upper() == 'EX':
                 self.expiry = time.time_ns() + int(float(data[self.expiry_name])) * 1e+9
-        except AttributeError:
-            self.expiry = None
+        except (TypeError, AttributeError, IndexError, ValueError):
+            self.expiry =""
         self.type = data["type"] if "type" in data else None
         try:
             self.s = f"{self.value}:{self.expiry}:{self.type}"
@@ -32,13 +35,28 @@ class Dict:
             self.s = f"{self.value}:{self.type}"
         self.u_s = data
         self.curr = datetime.now()
-        self.keys = data.keys()
         try:
+            self.keys = data.keys()
             self.start =  data["start"]
             self.end = data["end"]
         except (AttributeError,TypeError, IndexError, KeyError) as e:
             self.start = None
             self.end = None
+            self.keys = None
+
+    def __dict__(self):
+        print("data: ", self.u_s)
+
+    def __iter__(self, data):
+        self.data = data
+        self.index = len(data)
+
+    def __next__(self):
+        if self.index == 0:
+            raise StopIteration
+        self.index = self.index - 1
+        return self.data[self.index]
+
 
 class Datastore:
     def __init__(self, data: dict):
@@ -63,31 +81,28 @@ class Datastore:
         except AttributeError:
             return "(nil)"
 
-    def Get(self, k):
-       # if the key is expired
+    def Get(self, k, expiry_name=None):
        try:
            v = getattr(self, k)
+           if expiry_name is None:
+               return v[:v.find(":")]
            if self.isExpired(v):
                delattr(self, k)
                return "(nil)"
-           else:
-               sep = v.find(":")
-               return v[:sep]
-       except AttributeError as e:
+       except Exception as e:
            return f"-Err: {e}"
 
     def isExpired(self, v):
         try:
-
             sep_1 = v.find(":")+1
             sep_2 = v[sep_1:].find(":")
             expiry = v[sep_1:sep_1+sep_2]
             if expiry == 'None' or expiry == '' or expiry is None:
-                return False
+                return Exception
             #if isinstance(expiry, (str, int, float)):
             return time.time_ns() > int(float(expiry))
         except Exception as e:
-            return f"isExpired: {e}"
+            return f"Expiry invalid {e}"
 
     def run_scan(self, delay=0.1):
         try:
@@ -144,10 +159,13 @@ class Datastore:
 
     def Exists(self, k):
         with self._lock:
-            if hasattr(self, k):
-                return "(integer) 1"
-            else:
-                return "(integer) 0"
+            try:
+                if hasattr(self, k):
+                    return "(integer) 1"
+                else:
+                    return "(integer) 0"
+            except Exception as e:
+                return f"-Err: {e}"
 
 
     def build_new_v_ex(self, v, new_expiry):
@@ -158,18 +176,26 @@ class Datastore:
         v.replace(expiry, str(new_expiry_s))
         return v
 
-    def Add(self, k, v):
+    def Add(self, k, v, expiry_name=None):
         with self._lock:
             try:
+                if expiry_name is not None:
+                    if isinstance(self.expiry, int):
+                        pass
+            except Exception as e:
+                return f"-Err missing expiry: {e}"
+            try:
+                if k == "" or k is None:
+                    return "-ERR wrong number of arguments for 'set' command"
                 if hasattr(self, k):
                     setattr(self, k, v)
                     pass #return "(already exists)" # we never reach this!
-                if v is None:
+                if v is None or "":
                     return "-ERR wrong number of arguments for 'set' command"
                 if v is not None: # catchall
                     setattr(self, k, v)
                     return "+OK"
-                if v == "None:None:None" or v == "" or k == "" or k is None:
+                if v == "None:None:None" or v == "" or k == "" or k is None or k == "":
                     return "-ERR wrong number of arguments for 'set' command"
             except Exception as e:
                 return f"-ERR {e}"

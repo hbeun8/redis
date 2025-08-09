@@ -1,16 +1,17 @@
 
 import pytest
-from time import sleep, time_ns
+
 from protocol_handler import Bulkstring, Array, Error, Integer, Simplestring
 from command_handler import handle_command
 from connection_handler import ConnectionHandler as c
 from datastore import Datastore
-import datetime
+
+
 
 @pytest.mark.parametrize(
-    "datastore, expected",
+    "command, datastore, expected",
     [
-        # ladd
+        # exists
         ("exists",[""],  "Err wrong number of arguments for 'exists' command"),
         ("exists", ["invalid key", "None"], "(integer) 0"),
         ("exists", ["key", "None"], "(integer) 1"),
@@ -18,7 +19,7 @@ import datetime
         #(Array([Bulkstring("exists"), Bulkstring("invalid key"), Bulkstring("key")]), Integer(1)),
 
         # Set
-        ([""] , "-ERR wrong number of arguments for 'set' command"),
+        ("set", [""] , "-ERR wrong number of arguments for 'set' command"),
         ("set", ["key"], "-ERR wrong number of arguments for 'set' command"),
         ("set",["key", "value"], "+OK"),
 
@@ -60,9 +61,9 @@ import datetime
 )
 
 def test_handle_command(command, datastore, expected):
-    ds = Datastore({"ki": 0, "Expiry": "None"}) # initialise the instance
-    ds.Add(build(datastore))
-    result = handle_command(command, build(datastore))
+    ds = Datastore({"ki": 0, "Expiry": "None"})
+    ds.Add("k", 1)
+    result = handle_command(command, datastore)
     assert result == expected
 
 '''

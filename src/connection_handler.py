@@ -98,8 +98,8 @@ class ConnectionHandler:
                             kwarg_ex_px = self.isvalid(frames, 3, "Expiry"),
                             kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
                             datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
-
                 datastore = Dict(datastore)
+
                 result = command_handler.handle_command(cmd, datastore, persister)
                 output = self.resp_serialized(str(result))  # Consider appending any error message here
                 if output:

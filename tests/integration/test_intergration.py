@@ -28,20 +28,7 @@ def test_execute_echo(execute_echo):
     assert execute_echo(data) == expected
 
 def test_echo_integration(server):
-    res = subprocess.run(["redis-cli", "ECHO", "HELLO"], stdout=subprocess.PIPE)
+    res = subprocess.run(["redis-cli", "-p", "8001", "ECHO", "HELLO"], stdout=subprocess.PIPE)
     assert res.returncode == 0
     assert res.stdout.decode("utf-8").strip() == "HELLO"
-
-'''**********Edge-Cases**********'''
-
-def test_empty_message():
-    return ""
-
-def test_connection_drop_midstream():
-    return ""
-
-def test_abrupt_client_shutdown():
-    return ""
-
-'''**********Stress Tests**********'''
 

@@ -5,14 +5,22 @@ import threading
 from connection_handler import ConnectionHandler
 
 def _client_thread(conn, addr, PORT, server):
-    with conn:
+    connections = 1
+    pool_sema = threading.BoundedSemaphore(connections) # counter
+    with pool_sema:
+        pool_sema.release()
+        with conn:
+            pool_sema.acquire()
         #print(f"Connection from: {conn}")
         #print(f"Connected by {addr[0]} {addr[1]} succeeded")
-        print(f"[THREAD] conn.fileno() = {conn.fileno()}")
-        if server.args.l == 'tcp':
-            server._handle_tcp(conn, PORT)
-        else:
-            server._handle_udp(conn, PORT)
+            try:
+                print(f"[THREAD] conn.fileno() = {conn.fileno()}")
+                if server.args.l == 'tcp':
+                    server._handle_tcp(conn, PORT)
+                else:
+                    server._handle_udp(conn, PORT)
+            finally:
+                conn.close()
 
 class Server:
     def __init__(self, args):

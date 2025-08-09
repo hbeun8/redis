@@ -1,11 +1,12 @@
-[Redis_clone]
+[project]
 name = "redis-clone"
 version = "0.1.0"
 description = "Redis_server_app"
 requires-python = ">=3.12"
 dependencies = [
+    "notebook>=7.4.5",
     "pytest>=8.4.1",
-    "typer[all]"
+    "typer[all]",
 ]
 
 [project.scripts]
@@ -16,3 +17,9 @@ redis-clone = "redis_clone.main:main"
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+
+
+
+
+
