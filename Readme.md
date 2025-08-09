@@ -44,7 +44,7 @@ tests/
 
 ```
 ## Features:
-1.  Supported Commands: CONFIG, DECR, DEL, ECHO, EXISTS, INCR, LPUSH, LRANGE, PING, RPUSH, SET
+1.  Supported Commands: CONFIG, DECR, DEL, ECHO, EXISTS, GET, INCR, LPUSH, LRANGE, PING, RPUSH, SET
 2. Passive Scanners for Expiries
 3. Persistence through Append only File.
 4. Concurrency through threading
