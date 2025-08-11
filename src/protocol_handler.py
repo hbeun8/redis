@@ -19,32 +19,42 @@ class ParseError(Exception):
     def __str__(self):
         return self.message
 
+
 @dataclass
 class Simplestring:
     data: str
 
     def __post_init__(self):
         if self.data is None:
-            return ""
+            raise ValueError(None, 0)
+
+    def result(self):
+        value = self.data
+        return value
 
 @dataclass
 class Error:
-    err_string: str
-    err_arr = ["Err", "Errno", "WRONGTYPE", "Error"]
-    data = 'Err'
+    data: str
 
     def __post_init__(self):
         if self.data is None:
-            return ""
+            raise ValueError(None, 0)
 
+    def result(self):
+        value = self.data
+        return value
 
 @dataclass
 class Integer:
-    data: int
+    data: str
 
     def __post_init__(self):
         if self.data is None:
-            return ""
+            raise ValueError(None, 0)
+
+    def result(self):
+        value = self.data
+        return value
 
 @dataclass
 class Bulkstring:
@@ -52,7 +62,11 @@ class Bulkstring:
 
     def __post_init__(self):
         if self.data is None:
-            return ""
+            raise ValueError(None, 0)
+
+    def result(self):
+        value = self.data
+        return value
 
 @dataclass
 class Array:
@@ -86,61 +100,87 @@ class Parser:
         if not buffer or len(buffer) < 3:
             return None, 0
 
+        buffer = buffer
         frame_type = buffer[0:1]
-        sep = buffer.find(b'\r\n')
-
         match frame_type:
             case b'+':
                 # Simple String
+                sep = buffer.find(b'\r\n')
+                '''Validation Block'''
+                if buffer is None:
+                    return None, 0
                 if sep == -1:
                     return None, 0
-                value = buffer[1:sep].decode()
-                return Simplestring(value), sep + 2
-
-            case b'-':
-                # Error
-                if sep == -1:
-                    return None, 0
+                '''Validation Block'''
                 message = buffer[1:sep].decode()
-                return Error(message), sep + 2
-
+                try:
+                    return Simplestring(message), sep + 2
+                except ValueError as e:
+                    return e
+            case b'-':
+                # Errors
+                sep = buffer.find(b'\r\n')
+                '''Validation Block'''
+                if buffer is None:
+                    return None, 0
+                if sep == -1:
+                    return None, 0
+                '''Validation Block'''
+                message = buffer[1:sep].decode()
+                try:
+                    return Error(message), sep + 2
+                except ValueError as e:
+                    return e
             case b':':
                 # Integer
+                sep = buffer.find(b'\r\n')
+                '''Validation Block'''
+                if buffer is None:
+                    return None, 0
                 if sep == -1:
                     return None, 0
-                value = int(buffer[1:sep])
-                return Integer(value), sep + 2
-
+                '''Validation Block'''
+                message = buffer[1:sep].decode()
+                try:
+                    return Integer(message), sep + 2
+                except ValueError as e:
+                    return e
             case b'$':
                 # Bulk String
-                if sep == -1:
-                    return None, 0
+                sep = buffer.find(b'\r\n')
                 length = int(buffer[1:sep])
                 start = sep + 2
                 end = start + length
-                if len(buffer) < end + 2 or buffer[end:end + 2] != b'\r\n':
+                '''Validation Block'''
+                if buffer is None:
                     return None, 0
-                value = buffer[start:end].decode()
-                if value is None:
-                    return None, 0
-                return Bulkstring(value), end + 2
-
-            case b'*':
-                # Array
                 if sep == -1:
                     return None, 0
-
+                if len(buffer) < end + 2 or buffer[end:end + 2] != b'\r\n':
+                    return None, 0
+                '''Validation Block'''
+                message = buffer[start:end].decode()
+                try:
+                    return Bulkstring(message), end + 2
+                except ValueError as e:
+                    return e
+            case b'*':
+                # Arrays
+                sep = buffer.find(b'\r\n')
                 count = int(buffer[1:sep])
                 pos = sep + 2
                 elements = []
                 total_size = pos  # Start from just after header
+                '''Validation Block'''
+                if buffer is None:
+                    return None, 0
+                if sep == -1:
+                    return None, 0
 
-
-
+                '''Validation Block'''
                 for _ in range(count):
                     if pos >= len(buffer):
                         return None, 0
-
                     element, size = self.parse_frame(buffer[pos:])
                     if size == 0:
                         return None, 0

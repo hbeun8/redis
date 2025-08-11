@@ -3,7 +3,10 @@ from protocol_handler import Parser, Bulkstring, Array, Error, Integer, Simplest
 import command_handler
 from persistence import restore_from_file, AppendOnlyPersister
 import time
-from datastore import Dict
+from dataclasses import dataclass
+from datastore import Datastore
+from command_handler import resp_encoder_get
+
 persister = AppendOnlyPersister("log.aof")
 
 class ConnectionHandler:
@@ -18,10 +21,14 @@ class ConnectionHandler:
                     break
                 parser = Parser(data)
                 frames, _ = parser.parse_frame(data)
+                print(frames)
                 cmd = frames[0].data.upper()
-                if cmd == 'COMMAND':  # Remove this if you want Persister switched on startup.
+                if cmd == 'COMMAND':  # Remove this if you want Persister switched on startup or you could keep it on permamnently
                     self.conn.send(b"+OK'\r\n")
                     continue  # stay connected
+                if cmd == "CONFIG":
+                    self.handle_config()
+                    continue
                 if cmd == 'PING':
                     self.conn.send(b"+PONG\r\n")
                     continue
@@ -30,14 +37,8 @@ class ConnectionHandler:
                         buffer = restore_from_file("log.aof")
                         while True:
                             frames, frame_size = parser.parse_frame(buffer)
-                            if not frames:
-                                break
                             cmd = frames[0].data.upper()
-                            kwarg_key = self.isvalid(frames, 1, "None"),
-                            kwarg_value = self.isvalid(frames, 2, "None"),
-                            kwarg_ex_px = self.isvalid(frames, 3, "Expiry"),
-                            kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
-                            datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
+                            datastore = [el.data for el in frames[1:]]
                             result = command_handler.handle_command(cmd, datastore)
                             output = self.resp_serialized(str(result))  # Consider appending any error message her
                             if output:
@@ -46,6 +47,7 @@ class ConnectionHandler:
                                 self.conn.send(b'\n')
                     except Exception as e:
                         return f"-Err (persister): {e}"
+
                 if cmd == "BGREWRITEAOF":
                     try:
                         persister.safe_log_rebuild("replica_log.aof")
@@ -53,6 +55,7 @@ class ConnectionHandler:
                         persister.check(f"{time.time_ns}.aof")
                     except Exception as e:
                         return f"-Err (BGREWRITEAOF already in progress): {e}"
+
                 if cmd == 'ECHO':
                     if len(frames) == 2:
                         ds = frames[1].data
@@ -67,39 +70,8 @@ class ConnectionHandler:
                         ds=b'-Err\r\n'
                         self.conn.send(ds)
                         continue
-                # default option
-                option = 'vanilla'
-                datastore =  {} # proxy for now
-                # edge cases
-                if cmd == 'GET':
-                    kwarg_key = self.isvalid(frames, 1, "None"),
-                    if option == "vanilla":
-                        datastore = {kwarg_key[0]: "TO BE FOUND", "Expiry": "TO BE FOUND"}
-                else:
-                    if len(frames) == 2:
-                        if cmd == "SET":
-                            self.conn.send(self.resp_serialized("Err").encode())
-                            continue
-                        datastore = {getattr(frames[1], "data"): "NONE", "Expiry": "NONE"}
-                    elif len(frames) > 2 :
-                        if cmd == "LPUSH" or cmd == "RPUSH":
-                            kwarg_arr = self.isvalid(frames, 1, "None"),
-                            kwarg_arr_list = self.isvalid(frames, 10, frames[2:]),
-                            datastore = {kwarg_arr[0]: kwarg_arr_list[0]}
-                        elif cmd == "LRANGE":
-                            kwarg_arr_key = self.isvalid(frames, 1, "None"),
-                            kwarg_arr_start = self.isvalid(frames, 2, "None"),
-                            kwarg_arr_end = self.isvalid(frames, 3, "None")
-                            datastore = {"lrange_key": kwarg_arr_key[0],"start":kwarg_arr_start[0], "end": kwarg_arr_end}
 
-                        else:
-                            kwarg_key = self.isvalid(frames, 1, "None"),
-                            kwarg_value = self.isvalid(frames, 2, "None"),
-                            kwarg_ex_px = self.isvalid(frames, 3, "Expiry"),
-                            kwarg_ex_px_value = self.isvalid(frames, 4, "None"),
-                            datastore = {kwarg_key[0]: kwarg_value[0], kwarg_ex_px[0]: kwarg_ex_px_value[0]}
-                datastore = Dict(datastore)
-
+                datastore = [el.data for el in frames[1:]]
                 result = command_handler.handle_command(cmd, datastore, persister)
                 output = self.resp_serialized(str(result))  # Consider appending any error message here
                 if output:
@@ -162,3 +134,20 @@ class ConnectionHandler:
             hex_chunk = ' '.join(f"{b:02x}" for b in chunk)
             ascii_chunk = ''.join((chr(b) if 32 <= b < 127 else '.') for b in chunk)
             #print(f"{i:08x}  {hex_chunk:<{width * 3}}  {ascii_chunk}")
+
+    def handle_config(self):
+        arr = ["List of supported commands:",
+            "COMMAND ",
+           "CONFIG",
+            "DECR ",
+            "DEL",
+            "ECHO",
+            "EXISTS",
+            "INCR",
+            "LPUSH",
+            "LRANGE",
+            "PING",
+            "RPUSH",
+            ]
+        for el in arr:
+            self.conn.send(self.resp_serialized(el).encode())
