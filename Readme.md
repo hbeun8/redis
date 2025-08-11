@@ -99,6 +99,8 @@ python -m pytest tests/unit
 # Run only integration tests
 python -m pytest tests/integration
 
+# Run all tests
+pytest
 ```
 
 ## Running the Server
@@ -122,6 +124,6 @@ python main.py -p 8891 -e true
 
 ***********************************
 # Redis interactive Server on port 8001
-python main.py -p 8001 -i I
+python main.py -i I
 
 ```
