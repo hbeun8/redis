@@ -65,13 +65,13 @@ class Datastore:
     def LPUSH(self, k, v):
         if hasattr(self, k):
             for el in v:
-                self.deque.appendleft(el.data)
+                self.deque.appendleft(el)
             setattr(self, k, self.deque)
             length = len(list(self.deque))
             return f"(integer) {length}"
         else:
             for el in v:
-                self.deque.appendleft(el.data)
+                self.deque.appendleft(el)
             length = len(list(self.deque))
             setattr(self, k, list(self.deque))
             return f"(integer) {length}"
@@ -80,13 +80,13 @@ class Datastore:
     def RPUSH(self, k, v):
         if hasattr(self, k):
             for el in v:
-                self.deque.append(el.data)
+                self.deque.append(el)
             setattr(self, k, self.deque)
             length = len(list(self.deque))
             return f"(integer) {length}"
         else:
             for el in v:
-                self.deque.append(el.data)
+                self.deque.append(el)
             length = len(list(self.deque))
             setattr(self, k, list(self.deque))
             return f"(integer) {length}"
