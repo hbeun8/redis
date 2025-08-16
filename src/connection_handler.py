@@ -21,7 +21,6 @@ class ConnectionHandler:
                     break
                 parser = Parser(data)
                 frames, _ = parser.parse_frame(data)
-                print(frames)
                 cmd = frames[0].data.upper()
                 if cmd == 'COMMAND':  # Remove this if you want Persister switched on startup or you could keep it on permamnently
                     self.conn.send(b"+OK'\r\n")
@@ -73,20 +72,12 @@ class ConnectionHandler:
 
                 datastore = [el.data for el in frames[1:]]
                 result = command_handler.handle_command(cmd, datastore, persister)
-                output = self.resp_serialized(str(result))  # Consider appending any error message here
+                output = self.resp_serialized(str(result))
                 if output:
                     #persister.log_command(cmd, output.encode())
                     self.conn.send(output.encode())
                 else:
                     self.conn.send(b'\n')
-
-
-    def isvalid(self, data:list, index: int, safe: str):
-        try:
-            return getattr(data[index], "data")
-        except (IndexError, TypeError):
-            return safe
-
 
     def resp_serialized(self, data: str):
         try:
@@ -102,11 +93,6 @@ class ConnectionHandler:
     def handle_hex_dump(self):
         data = self.conn.recv(1024)
         self.hex_dump(data)
-
-    def handle_echo(self):
-        data = self.conn.recv(1024)
-        if data:
-            return self.conn.sendall(data)
 
     def handle_echo_loop(self):
         while True:

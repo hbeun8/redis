@@ -10,7 +10,7 @@ class Datastore:
     def __init__(self, datastore: list):
         self._lock = Lock()
         self.datastore = datastore
-        self.deque = deque()
+        self.deque = deque() # we dont really need this.
 
     def __post_init__(self):
         pass
@@ -64,31 +64,35 @@ class Datastore:
 
     def LPUSH(self, k, v):
         if hasattr(self, k):
+            self.deque = getattr(self, k)
             for el in v:
                 self.deque.appendleft(el)
             setattr(self, k, self.deque)
             length = len(list(self.deque))
             return f"(integer) {length}"
         else:
+            self.deque = deque()
             for el in v:
                 self.deque.appendleft(el)
             length = len(list(self.deque))
-            setattr(self, k, list(self.deque))
+            setattr(self, k, self.deque)
             return f"(integer) {length}"
 
 
     def RPUSH(self, k, v):
         if hasattr(self, k):
+            self.deque = getattr(self, k)
             for el in v:
                 self.deque.append(el)
             setattr(self, k, self.deque)
             length = len(list(self.deque))
             return f"(integer) {length}"
         else:
+            self.deque = deque()
             for el in v:
                 self.deque.append(el)
             length = len(list(self.deque))
-            setattr(self, k, list(self.deque))
+            setattr(self, k, self.deque)
             return f"(integer) {length}"
 
 
@@ -97,8 +101,7 @@ class Datastore:
             return "(empty array)"
         if end < start:
             return "(empty array)"
-        s_v = getattr(self, k)
-        return list(s_v)[int(start):int(end)]
+        return list(getattr(self, k))[int(start):int(end)]
 
 
     def Exists(self, k):
